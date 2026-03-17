@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import API from '../../services/api';
+import { getUsers } from '../../services/api';
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
@@ -12,7 +12,7 @@ const ManageUsers = () => {
   const fetchUsers = async () => {
       setLoading(true);
       try {
-          const { data } = await API.get('/users');
+          const { data } = await getUsers();
           // Response shape is { success: true, count: X, users: [...] }
           if (data && data.users) {
               setUsers(data.users);

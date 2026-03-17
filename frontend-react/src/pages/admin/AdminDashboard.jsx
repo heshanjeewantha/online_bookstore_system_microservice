@@ -1,92 +1,94 @@
-import { useState, useEffect } from 'react';
-import { getBooks } from '../../mocks/books';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { getBooks } from '../../services/api';
 import { getOrders } from '../../mocks/orders';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
-     totalBooks: 0,
-     totalOrders: 0,
-     totalRevenue: 0,
-     pendingOrders: 0,
-     lowStockBooks: 0,
+    totalBooks: 0,
+    totalOrders: 0,
+    totalRevenue: 0,
+    pendingOrders: 0,
+    lowStockBooks: 0,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
-       try {
-          const [booksRes, ordersRes] = await Promise.all([getBooks(), getOrders()]);
-          const books = booksRes.data;
-          const orders = ordersRes.data;
-          
-          setStats({
-              totalBooks: books.length,
-              totalOrders: orders.length,
-              totalRevenue: orders.reduce((sum, order) => sum + (order.orderStatus !== 'cancelled' ? order.totalPrice : 0), 0),
-              pendingOrders: orders.filter(o => o.orderStatus === 'pending').length,
-              lowStockBooks: books.filter(b => b.stock <= 5).length,
-          });
-       } catch (err) {
-          console.error("Dashboard stats error:", err);
-       } finally {
-          setLoading(false);
-       }
+      try {
+        const [booksRes, ordersRes] = await Promise.all([getBooks(), getOrders()]);
+        const books = booksRes.data.books;
+        const orders = ordersRes.data;
+
+        setStats({
+          totalBooks: books.length,
+          totalOrders: orders.length,
+          totalRevenue: orders.reduce(
+            (sum, order) => sum + (order.orderStatus !== 'cancelled' ? order.totalPrice : 0),
+            0
+          ),
+          pendingOrders: orders.filter((order) => order.orderStatus === 'pending').length,
+          lowStockBooks: books.filter((book) => book.stock <= 5).length,
+        });
+      } catch (error) {
+        console.error('Dashboard stats error:', error);
+      } finally {
+        setLoading(false);
+      }
     };
+
     fetchStats();
   }, []);
 
   if (loading) {
-      return <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>;
+    return (
+      <div className="flex justify-center py-20">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-       <h1 className="text-3xl font-bold text-slate-800 mb-2 border-l-4 border-brand-600 pl-4">Admin Dashboard</h1>
-       <p className="text-slate-500 mb-8 pl-5">System overview and quick statistics.</p>
+    <div className="mx-auto max-w-7xl">
+      <h1 className="border-l-4 border-brand-600 pl-4 text-3xl font-bold text-slate-800">
+        Admin Dashboard
+      </h1>
+      <p className="mb-8 mt-2 text-slate-500">Catalog and order overview for the bookstore system.</p>
 
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-           {/* Revenue Card */}
-           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md relative overflow-hidden group hover:border-emerald-300 transition-colors">
-               <div className="absolute -right-4 -top-4 text-7xl opacity-5 group-hover:scale-110 transition-transform">💰</div>
-               <p className="text-slate-500 text-sm font-bold uppercase tracking-wider mb-2">Total Revenue</p>
-               <h3 className="text-3xl font-extrabold text-emerald-600">Rs. {stats.totalRevenue.toLocaleString()}</h3>
-           </div>
-           
-           {/* Orders Card */}
-           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md relative overflow-hidden group hover:border-brand-300 transition-colors">
-               <div className="absolute -right-4 -top-4 text-7xl opacity-5 group-hover:scale-110 transition-transform">📦</div>
-               <p className="text-slate-500 text-sm font-bold uppercase tracking-wider mb-2">Total Orders</p>
-               <h3 className="text-3xl font-extrabold text-brand-600 mb-2">{stats.totalOrders}</h3>
-               {stats.pendingOrders > 0 && (
-                  <span className="inline-block bg-amber-50 text-amber-600 text-xs px-2 py-0.5 rounded-md font-bold border border-amber-200">
-                     {stats.pendingOrders} Pending
-                  </span>
-               )}
-           </div>
+      <div className="mb-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">Books in Catalog</p>
+          <p className="mt-4 text-4xl font-black text-brand-600">{stats.totalBooks}</p>
+          <p className="mt-3 text-sm text-slate-500">{stats.lowStockBooks} titles currently need stock attention.</p>
+        </div>
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">Orders</p>
+          <p className="mt-4 text-4xl font-black text-slate-900">{stats.totalOrders}</p>
+          <p className="mt-3 text-sm text-slate-500">{stats.pendingOrders} orders are still pending.</p>
+        </div>
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">Revenue</p>
+          <p className="mt-4 text-4xl font-black text-emerald-600">Rs. {stats.totalRevenue.toLocaleString()}</p>
+          <p className="mt-3 text-sm text-slate-500">Calculated from the current mock order history.</p>
+        </div>
+      </div>
 
-           {/* Books Card */}
-           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md relative overflow-hidden group sm:col-span-2 lg:col-span-1 hover:border-brand-300 transition-colors">
-               <div className="absolute -right-4 -top-4 text-7xl opacity-5 group-hover:scale-110 transition-transform">📚</div>
-               <p className="text-slate-500 text-sm font-bold uppercase tracking-wider mb-2">Books in Catalog</p>
-               <h3 className="text-3xl font-extrabold text-brand-600 mb-2">{stats.totalBooks}</h3>
-               {stats.lowStockBooks > 0 && (
-                  <span className="inline-block bg-red-50 text-red-600 text-xs px-2 py-0.5 rounded-md font-bold border border-red-200">
-                     {stats.lowStockBooks} Low Stock
-                  </span>
-               )}
-           </div>
-       </div>
-
-       {/* Quick Actions / Getting Started */}
-       <h2 className="text-xl font-bold text-slate-800 mb-4 px-2">Quick Actions</h2>
-       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-           {['Manage Books', 'Manage Orders', 'User Management'].map((action, i) => (
-               <div key={i} className="bg-white border border-slate-200 shadow-sm rounded-xl p-5 hover:border-brand-400 hover:shadow-md transition-all flex items-center justify-between cursor-pointer group">
-                  <span className="text-slate-700 font-bold group-hover:text-brand-600 transition-colors">{action}</span>
-                  <span className="text-brand-600 font-bold group-hover:translate-x-1 transition-transform">→</span>
-               </div>
-           ))}
-       </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {[
+          { label: 'Manage Books', path: '/admin/books', helper: 'Create, edit, and remove catalog items.' },
+          { label: 'Manage Orders', path: '/admin/orders', helper: 'Review the simulated order pipeline.' },
+          { label: 'Manage Users', path: '/admin/users', helper: 'Inspect registered admins and customers.' },
+        ].map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg"
+          >
+            <p className="text-lg font-bold text-slate-900">{item.label}</p>
+            <p className="mt-3 text-sm leading-6 text-slate-500">{item.helper}</p>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 };

@@ -3,8 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
-const { seedDefaultUsers } = require('./seeders/bootstrapUsers');
-const userRoutes = require('./routes/userRoutes');
+const { seedDefaultBooks } = require('./seeders/bootstrapBooks');
+const bookRoutes = require('./routes/bookRoutes');
 
 const app = express();
 
@@ -15,28 +15,28 @@ app.use(cors({
 app.use(express.json());
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'user-service', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', service: 'book-service', timestamp: new Date().toISOString() });
 });
 
-app.use('/users', userRoutes);
+app.use('/books', bookRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5002;
 
 const startServer = async () => {
   try {
     await connectDB();
 
-    if (process.env.ENABLE_BOOTSTRAP_USERS === 'true') {
-      await seedDefaultUsers();
+    if (process.env.ENABLE_BOOTSTRAP_BOOKS === 'true') {
+      await seedDefaultBooks();
     }
 
     app.listen(PORT, () => {
-      console.log(`User service running on http://localhost:${PORT}`);
+      console.log(`Book service running on http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error(`Failed to start user service: ${error.message}`);
+    console.error(`Failed to start book service: ${error.message}`);
     process.exit(1);
   }
 };

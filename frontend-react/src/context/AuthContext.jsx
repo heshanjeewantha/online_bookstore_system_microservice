@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from 'react';
 import { getProfile } from '../services/api';
 
@@ -16,7 +17,9 @@ export const AuthProvider = ({ children }) => {
           const { data } = await getProfile();
           setUser(data.user);
         } catch {
-          logout();
+          localStorage.removeItem('pg_token');
+          setToken(null);
+          setUser(null);
         }
       }
       setLoading(false);

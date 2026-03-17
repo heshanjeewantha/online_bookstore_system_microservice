@@ -1,0 +1,73 @@
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: bookstore-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  user-service:
+    build:
+      context: ./user-service
+    container_name: bookstore-user-service
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+      MONGO_URI: mongodb://mongo:27017/bookstore_users
+      JWT_SECRET: supersecretjwtkey123456789
+      JWT_EXPIRE: 7d
+      CLIENT_ORIGIN: http://localhost:8080
+      ENABLE_BOOTSTRAP_USERS: "true"
+      DEFAULT_ADMIN_NAME: Admin PothaGedara
+      DEFAULT_ADMIN_EMAIL: admin@pothagedara.lk
+      DEFAULT_ADMIN_PASSWORD: Admin@123
+      DEFAULT_USER_NAME: Kasun Perera
+      DEFAULT_USER_EMAIL: kasun@example.com
+      DEFAULT_USER_PASSWORD: Test@123
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  book-service:
+    build:
+      context: ./book-service
+    container_name: bookstore-book-service
+    restart: unless-stopped
+    ports:
+      - "5002:5002"
+    environment:
+      NODE_ENV: production
+      PORT: 5002
+      MONGO_URI: mongodb://mongo:27017/bookstore_books
+      JWT_SECRET: supersecretjwtkey123456789
+      JWT_EXPIRE: 7d
+      CLIENT_ORIGIN: http://localhost:8080
+      ENABLE_BOOTSTRAP_BOOKS: "true"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: bookstore-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - user-service
+      - book-service
+
+volumes:
+  mongo-data:

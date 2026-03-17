@@ -13,60 +13,65 @@ const RegisterPage = () => {
   const [showPass, setShowPass] = useState(false);
 
   const validate = () => {
-    const errs = {};
-    if (!form.name.trim() || form.name.length < 2) errs.name = 'Name must be at least 2 characters';
-    if (!/^\S+@\S+\.\S+$/.test(form.email)) errs.email = 'Enter a valid email';
-    if (form.password.length < 6) errs.password = 'Password must be at least 6 characters';
-    if (form.password !== form.confirmPassword) errs.confirmPassword = 'Passwords do not match';
-    return errs;
+    const nextErrors = {};
+    if (!form.name.trim() || form.name.length < 2) nextErrors.name = 'Name must be at least 2 characters';
+    if (!/^\S+@\S+\.\S+$/.test(form.email)) nextErrors.email = 'Enter a valid email';
+    if (form.password.length < 6) nextErrors.password = 'Password must be at least 6 characters';
+    if (form.password !== form.confirmPassword) nextErrors.confirmPassword = 'Passwords do not match';
+    return nextErrors;
   };
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setErrors({ ...errors, [e.target.name]: '' });
+  const handleChange = (event) => {
+    setForm({ ...form, [event.target.name]: event.target.value });
+    setErrors({ ...errors, [event.target.name]: '' });
     setApiError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
+      return;
+    }
 
     setLoading(true);
     try {
-      const { data } = await registerUser({ name: form.name, email: form.email, password: form.password });
+      const { data } = await registerUser({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      });
       login(data.user, data.token);
-      navigate('/profile');
-    } catch (err) {
-      setApiError(err.response?.data?.message || 'Registration failed. Please try again.');
+      navigate(data.user.role === 'admin' ? '/admin' : '/dashboard');
+    } catch (error) {
+      setApiError(error.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
       <div className="relative w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 group">
-            <div className="w-12 h-12 bg-brand-600 rounded-xl flex items-center justify-center shadow-md">
-              <span className="text-white font-bold">PG</span>
+        <div className="mb-8 text-center">
+          <Link to="/" className="inline-flex items-center gap-2">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600 shadow-md">
+              <span className="font-bold text-white">PG</span>
             </div>
           </Link>
           <h1 className="mt-4 text-2xl font-bold text-slate-800">Create an Account</h1>
-          <p className="text-slate-500 text-sm mt-1">Join PothaGedara.lk today</p>
+          <p className="mt-1 text-sm text-slate-500">Join the bookstore platform today</p>
         </div>
 
-        <div className="card p-8 bg-white border border-slate-200">
+        <div className="card border border-slate-200 bg-white p-8">
           {apiError && (
-            <div className="mb-5 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
-              <span>⚠️</span> {apiError}
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {apiError}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Name */}
             <div>
               <label className="label">Full Name</label>
               <input
@@ -79,10 +84,9 @@ const RegisterPage = () => {
                 onChange={handleChange}
                 className={`input-field ${errors.name ? 'border-red-500 focus:ring-red-500' : ''}`}
               />
-              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+              {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
             </div>
 
-            {/* Email */}
             <div>
               <label className="label">Email Address</label>
               <input
@@ -95,10 +99,9 @@ const RegisterPage = () => {
                 onChange={handleChange}
                 className={`input-field ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
               />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
             </div>
 
-            {/* Password */}
             <div>
               <label className="label">Password</label>
               <div className="relative">
@@ -110,17 +113,19 @@ const RegisterPage = () => {
                   placeholder="Min. 6 characters"
                   value={form.password}
                   onChange={handleChange}
-                  className={`input-field pr-12 ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
+                  className={`input-field pr-14 ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
                 />
-                <button type="button" onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                  {showPass ? '🙈' : '👁️'}
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  {showPass ? 'Hide' : 'Show'}
                 </button>
               </div>
-              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+              {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
             </div>
 
-            {/* Confirm Password */}
             <div>
               <label className="label">Confirm Password</label>
               <input
@@ -133,22 +138,24 @@ const RegisterPage = () => {
                 onChange={handleChange}
                 className={`input-field ${errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : ''}`}
               />
-              {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
+              {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
+            <button type="submit" disabled={loading} className="btn-primary flex w-full items-center justify-center gap-2">
               {loading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                   Creating account...
                 </>
               ) : 'Create Account'}
             </button>
           </form>
 
-          <p className="text-center text-slate-500 text-sm mt-6">
+          <p className="mt-6 text-center text-sm text-slate-500">
             Already have an account?{' '}
-            <Link to="/login" className="text-brand-600 hover:text-brand-700 font-medium">Sign in</Link>
+            <Link to="/login" className="font-medium text-brand-600 hover:text-brand-700">
+              Sign in
+            </Link>
           </p>
         </div>
       </div>

@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
-import { getInternalBookData, updateInternalBookStock } from './books';
 import { processPayment } from './payments';
 
 // Initial hardcoded data
@@ -48,23 +46,20 @@ export const getOrderById = async (id) => {
 
 export const createOrder = async (userId, items) => {
     await delay();
-    
-    // 1. Calculate and Verify (Order -> Book Catalog Service)
-    const allBooks = getInternalBookData();
+
     let totalPrice = 0;
     const orderItems = [];
 
     for (const item of items) {
-        const book = allBooks.find(b => b._id === item.bookId);
-        if(!book) throw new Error(`Book ${item.bookId} not found`);
-        if(book.stock < item.quantity) throw new Error(`Insufficient stock for ${book.title}`);
-        
-        totalPrice += (book.price * item.quantity);
+        if (!item.bookId || !item.title) throw new Error('Invalid book item supplied');
+        if (item.stock < item.quantity) throw new Error(`Insufficient stock for ${item.title}`);
+
+        totalPrice += (item.price * item.quantity);
         orderItems.push({
-            bookId: book._id,
-            title: book.title,
+            bookId: item.bookId,
+            title: item.title,
             quantity: item.quantity,
-            price: book.price
+            price: item.price
         });
     }
 
@@ -81,12 +76,6 @@ export const createOrder = async (userId, items) => {
     try {
         await processPayment(newOrder._id, userId, totalPrice);
         newOrder.orderStatus = "processing"; // Payment successful
-        
-        // 3. Update Stock
-        for (const item of orderItems) {
-            updateInternalBookStock(item.bookId, item.quantity);
-        }
-
     } catch (paymentError) {
         newOrder.orderStatus = "cancelled"; // Payment failed
         console.error("Payment failed for order, marked as cancelled:", paymentError);
