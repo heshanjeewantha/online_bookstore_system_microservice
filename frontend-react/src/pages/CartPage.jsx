@@ -1,0 +1,142 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+
+const CartPage = () => {
+  const { cartItems, updateQuantity, removeFromCart, getCartTotal } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleCheckout = () => {
+    if (!user) {
+      navigate('/login', { state: { from: { pathname: '/cart' } } });
+      return;
+    }
+    if (cartItems.length === 0) return;
+    navigate('/payment');
+  };
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+        <div className="text-6xl mb-6 opacity-50">🛒</div>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">Your cart is empty</h2>
+        <p className="text-slate-500 mb-8">Looks like you haven't added any books yet.</p>
+        <Link to="/" className="btn-primary">Browse Books</Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <h1 className="text-3xl font-bold text-slate-800 mb-8 border-l-4 border-brand-600 pl-4">Shopping Cart</h1>
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Cart Items List */}
+        <div className="w-full lg:w-2/3">
+           <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-md">
+              <div className="hidden sm:grid grid-cols-12 gap-4 p-4 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50">
+                <div className="col-span-6">Product</div>
+                <div className="col-span-3 text-center">Quantity</div>
+                <div className="col-span-3 text-right">Subtotal</div>
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                 {cartItems.map((item) => (
+                    <div key={item._id} className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-12 gap-6 items-center hover:bg-slate-50 transition-colors">
+                        {/* Mobile view wrap */}
+                        <div className="sm:col-span-6 flex items-start sm:items-center gap-4">
+                             <img src={item.imageUrl} alt={item.title} className="w-16 h-24 object-cover rounded-md shadow-sm border border-slate-200" />
+                             <div>
+                                <Link to={`/book/${item._id}`} className="text-slate-800 font-bold hover:text-brand-600 transition-colors line-clamp-2 mb-1">
+                                    {item.title}
+                                </Link>
+                                <p className="text-slate-500 text-xs mb-2">{item.author}</p>
+                                <p className="text-brand-600 font-semibold text-sm">Rs. {item.price.toLocaleString()}</p>
+                                {/* Mobile trash button */}
+                                <button onClick={() => removeFromCart(item._id)} className="sm:hidden text-red-500 hover:text-red-700 text-xs font-bold flex items-center gap-1 mt-3 transition-colors">
+                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                   Remove
+                                </button>
+                             </div>
+                        </div>
+
+                        {/* Quantity Controls */}
+                        <div className="sm:col-span-3 flex justify-between sm:justify-center items-center">
+                             <span className="sm:hidden text-slate-500 text-sm font-semibold">Quantity:</span>
+                             <div className="flex items-center bg-white border border-slate-300 rounded-lg overflow-hidden h-9 w-24 shadow-sm">
+                                <button onClick={() => updateQuantity(item._id, item.quantity - 1)} className="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-colors">-</button>
+                                <div className="flex-1 text-center font-bold text-slate-800 text-sm border-x border-slate-200 select-none h-full flex items-center justify-center">{item.quantity}</div>
+                                <button 
+                                  onClick={() => updateQuantity(item._id, item.quantity + 1)} 
+                                  disabled={item.quantity >= item.stock}
+                                  className="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-800 disabled:opacity-30 transition-colors"
+                                >+</button>
+                             </div>
+                        </div>
+
+                        {/* Subtotal & Actions */}
+                        <div className="sm:col-span-3 flex justify-between sm:justify-end items-center">
+                             <span className="sm:hidden text-slate-500 text-sm font-semibold">Total:</span>
+                             <div className="flex items-center gap-4">
+                               <p className="text-slate-800 font-bold tracking-wide">Rs. {(item.price * item.quantity).toLocaleString()}</p>
+                               {/* Desktop trash button */}
+                               <button onClick={() => removeFromCart(item._id)} className="hidden sm:flex text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                               </button>
+                             </div>
+                        </div>
+                    </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+
+        {/* Order Summary */}
+        <div className="w-full lg:w-1/3">
+           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md sticky top-24">
+              <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                 <span>🧾</span> Order Summary
+              </h2>
+
+              <div className="space-y-4 mb-6">
+                 <div className="flex justify-between text-slate-600 text-sm">
+                    <span>Subtotal ({cartItems.length} items)</span>
+                    <span className="text-slate-800 font-bold">Rs. {getCartTotal().toLocaleString()}</span>
+                 </div>
+                 <div className="flex justify-between text-slate-600 text-sm">
+                    <span>Shipping Estimate</span>
+                    <span className="text-emerald-600 font-bold">Free</span>
+                 </div>
+                 <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
+                    <span className="text-slate-800 font-bold">Order Total</span>
+                    <span className="text-2xl font-extrabold text-brand-600 tracking-wide">
+                        Rs. {getCartTotal().toLocaleString()}
+                    </span>
+                 </div>
+              </div>
+
+              <button 
+                onClick={handleCheckout}
+                className="w-full btn-primary h-14 text-lg flex items-center justify-center gap-2"
+              >
+                 {user ? (
+                   <>Proceed to Checkout <span className="text-xl">💳</span></>
+                 ) : (
+                   <>Login to Checkout <span>🔒</span></>
+                 )}
+              </button>
+              
+              <div className="mt-6 flex items-center justify-center gap-2 text-xs font-semibold text-slate-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                Secure 256-bit AES Encryption
+              </div>
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CartPage;
