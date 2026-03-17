@@ -11,7 +11,7 @@ const HomePage = () => {
     const loadFeaturedBooks = async () => {
       try {
         const { data } = await getBooks();
-        setFeaturedBooks(data.books.slice(0, 4));
+        setFeaturedBooks(data.books);
       } catch (error) {
         console.error('Failed to load featured books', error);
       } finally {
@@ -21,6 +21,8 @@ const HomePage = () => {
 
     loadFeaturedBooks();
   }, []);
+
+  const marqueeDuration = `${Math.max(featuredBooks.length * 7, 28)}s`;
 
   return (
     <div className="bg-slate-50">
@@ -88,11 +90,30 @@ const HomePage = () => {
           <div className="flex justify-center py-20">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
           </div>
+        ) : featuredBooks.length === 0 ? (
+          <div className="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-sm">
+            <h3 className="text-2xl font-bold text-slate-800">No books available right now</h3>
+            <p className="mt-3 text-slate-500">
+              Check back soon for new additions to the catalog.
+            </p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-4">
-            {featuredBooks.map((book) => (
-              <BookCard key={book._id} book={book} variant="featured" />
-            ))}
+          <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+            <div
+              className="flex w-max animate-marquee-slow"
+              style={{ '--marquee-duration': marqueeDuration }}
+            >
+              <div className="flex shrink-0 gap-6 pr-6">
+                {featuredBooks.map((book) => (
+                  <BookCard key={`featured-a-${book._id}`} book={book} variant="featured" />
+                ))}
+              </div>
+              <div className="flex shrink-0 gap-6 pr-6" aria-hidden="true">
+                {featuredBooks.map((book) => (
+                  <BookCard key={`featured-b-${book._id}`} book={book} variant="featured" />
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </section>

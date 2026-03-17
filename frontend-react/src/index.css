@@ -41,6 +41,10 @@
   .animate-fade-in-up {
     animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+  .animate-marquee-slow {
+    animation: marquee-slow var(--marquee-duration, 28s) linear infinite;
+    will-change: transform;
+  }
 }
 
 @keyframes float {
@@ -56,4 +60,15 @@
 @keyframes fade-in-up {
   0% { opacity: 0; transform: translateY(20px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes marquee-slow {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee-slow {
+    animation: none;
+  }
 }

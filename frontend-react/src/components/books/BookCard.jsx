@@ -6,7 +6,7 @@ const BookCard = ({ book, variant = 'compact' }) => {
       <Link
         to={`/book/${book._id}`}
         aria-label={`View details for ${book.title}`}
-        className="group block overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+        className="group block w-[240px] shrink-0 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:w-[280px] lg:w-[320px]"
       >
         <div className="aspect-[3/4] overflow-hidden bg-slate-100">
           <img
