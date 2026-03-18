@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { createOrder } from '../mocks/orders';
+// PaymentPage is no longer used — checkout and order creation
+// now happen directly on the CartPage via the order-service API.
 
 const PaymentPage = () => {
   const { cartItems, getCartTotal, clearCart } = useCart();

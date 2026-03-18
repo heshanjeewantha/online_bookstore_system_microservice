@@ -1,13 +1,18 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { createOrder } from '../services/api';
 
 const CartPage = () => {
-  const { cartItems, updateQuantity, removeFromCart, getCartTotal } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!user) {
       navigate('/login', { state: { from: { pathname: '/cart' } } });
       return;
@@ -17,8 +22,56 @@ const CartPage = () => {
       return;
     }
 
-    navigate('/payment');
+    setProcessing(true);
+    setError('');
+
+    try {
+      const itemsPayload = cartItems.map((item) => ({
+        bookId: item._id,
+        title: item.title,
+        author: item.author || '',
+        image: item.image || '',
+        quantity: item.quantity,
+        price: item.price,
+      }));
+
+      await createOrder({
+        items: itemsPayload,
+        userName: user.name || '',
+        userEmail: user.email || '',
+      });
+
+      setSuccess(true);
+      clearCart();
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to place order. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
   };
+
+  if (success) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4 bg-slate-50">
+        <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-md border-2 border-emerald-200">
+          <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 className="text-3xl font-extrabold text-slate-800 mb-4">Order Placed Successfully!</h2>
+        <p className="text-slate-500 mb-2 max-w-md">
+          Your order has been submitted and is awaiting admin approval.
+        </p>
+        <p className="text-slate-400 text-sm mb-8 max-w-md">
+          Once an admin approves your order, you'll be notified and can proceed with payment.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Link to="/dashboard/orders" className="btn-primary">View My Orders</Link>
+          <Link to="/books" className="btn-secondary">Continue Shopping</Link>
+        </div>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -121,14 +174,42 @@ const CartPage = () => {
               </div>
             </div>
 
+            {error && (
+              <div className="mb-4 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm flex items-start gap-2">
+                <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v4m0 4h.01M10.3 3.9l-7.4 12.8A1.5 1.5 0 004.2 19h15.6a1.5 1.5 0 001.3-2.3L13.7 3.9a1.5 1.5 0 00-2.6 0z" />
+                </svg>
+                <span>{error}</span>
+              </div>
+            )}
+
             <button
               onClick={handleCheckout}
-              className="w-full btn-primary h-14 text-lg flex items-center justify-center"
+              disabled={processing}
+              className="w-full btn-primary h-14 text-lg flex items-center justify-center gap-2"
             >
-              {user ? 'Proceed to Checkout' : 'Login to Checkout'}
+              {processing ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Placing Order...
+                </>
+              ) : user ? (
+                'Place Order'
+              ) : (
+                'Login to Checkout'
+              )}
             </button>
 
-            <div className="mt-6 flex items-center justify-center gap-2 text-xs font-semibold text-slate-400">
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+              <p className="text-amber-700 text-xs font-semibold flex items-center gap-2">
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Your order will require admin approval before payment.
+              </p>
+            </div>
+
+            <div className="mt-4 flex items-center justify-center gap-2 text-xs font-semibold text-slate-400">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>

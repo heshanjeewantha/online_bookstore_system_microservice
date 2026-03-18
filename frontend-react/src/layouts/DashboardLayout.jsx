@@ -17,6 +17,7 @@ const DashboardLayout = ({ type }) => {
     { name: 'Dashboard Overview', path: '/admin' },
     { name: 'Manage Books', path: '/admin/books' },
     { name: 'Manage Orders', path: '/admin/orders' },
+    { name: 'Manage Payments', path: '/admin/payments' },
     { name: 'User Management', path: '/admin/users' },
   ];
 

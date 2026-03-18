@@ -23,7 +23,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5001
-      MONGO_URI: mongodb://mongo:27017/bookstore_users
+      MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
       JWT_SECRET: supersecretjwtkey123456789
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
@@ -48,11 +48,47 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5002
-      MONGO_URI: mongodb://mongo:27017/bookstore_books
+      MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
       JWT_SECRET: supersecretjwtkey123456789
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
       ENABLE_BOOTSTRAP_BOOKS: "true"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  order-service:
+    build:
+      context: ./order-service
+    container_name: bookstore-order-service
+    restart: unless-stopped
+    ports:
+      - "5003:5003"
+    environment:
+      NODE_ENV: production
+      PORT: 5003
+      MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
+      JWT_SECRET: supersecretjwtkey123456789
+      JWT_EXPIRE: 7d
+      CLIENT_ORIGIN: http://localhost:8080
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  payment-service:
+    build:
+      context: ./payment-service
+    container_name: bookstore-payment-service
+    restart: unless-stopped
+    ports:
+      - "5004:5004"
+    environment:
+      NODE_ENV: production
+      PORT: 5004
+      MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
+      JWT_SECRET: supersecretjwtkey123456789
+      JWT_EXPIRE: 7d
+      CLIENT_ORIGIN: http://localhost:8080
     depends_on:
       mongo:
         condition: service_healthy
@@ -68,6 +104,8 @@ services:
     depends_on:
       - user-service
       - book-service
+      - order-service
+      - payment-service
 
 volumes:
   mongo-data:
