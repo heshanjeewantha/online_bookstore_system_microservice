@@ -23,7 +23,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5001
-      MONGO_URI: mongodb://mongo:27017/bookstore_users
+      MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
       JWT_SECRET: supersecretjwtkey123456789
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
@@ -48,7 +48,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5002
-      MONGO_URI: mongodb://mongo:27017/bookstore_books
+      MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
       JWT_SECRET: supersecretjwtkey123456789
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
@@ -67,7 +67,25 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5003
-      MONGO_URI: mongodb://mongo:27017/bookstore_orders
+      MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
+      JWT_SECRET: supersecretjwtkey123456789
+      JWT_EXPIRE: 7d
+      CLIENT_ORIGIN: http://localhost:8080
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  payment-service:
+    build:
+      context: ./payment-service
+    container_name: bookstore-payment-service
+    restart: unless-stopped
+    ports:
+      - "5004:5004"
+    environment:
+      NODE_ENV: production
+      PORT: 5004
+      MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
       JWT_SECRET: supersecretjwtkey123456789
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
@@ -87,6 +105,7 @@ services:
       - user-service
       - book-service
       - order-service
+      - payment-service
 
 volumes:
   mongo-data:

@@ -77,10 +77,11 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
           { label: 'Manage Books', path: '/admin/books', helper: 'Create, edit, and remove catalog items.' },
           { label: 'Manage Orders', path: '/admin/orders', helper: 'Review, approve, and manage customer orders.' },
+          { label: 'Manage Payments', path: '/admin/payments', helper: 'Track payment status and transaction history.' },
           { label: 'Manage Users', path: '/admin/users', helper: 'Inspect registered admins and customers.' },
         ].map((item) => (
           <Link

@@ -41,15 +41,14 @@ const HomePage = () => {
         <div className="relative mx-auto flex max-w-7xl flex-col gap-12 px-4 py-20 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-28">
           <div className="max-w-3xl">
             <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-brand-300">
-              Microservices Architecture — CTSE Assignment
+              Curated Reads for Every Reader
             </span>
             <h1 className="mt-6 text-5xl font-black leading-tight tracking-tight sm:text-6xl">
-              Your online bookstore, powered by microservices.
+              Discover your next favorite book.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-              PothaGedara is a cloud-native online bookstore built with a microservices architecture.
-              Browse books, place orders, and track shipment — all coordinated across dedicated services
-              connected via an Nginx API gateway.
+              Welcome to PothaGedara, your online bookstore for fiction, non-fiction, and academic titles.
+              Browse new arrivals, place orders in minutes, and track delivery updates from your account dashboard.
             </p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Link to="/books" className="btn-primary text-center">
@@ -145,7 +144,7 @@ const HomePage = () => {
             From browsing to delivery
           </h2>
           <p className="mt-3 max-w-2xl mx-auto text-slate-600">
-            Each step in the order lifecycle is managed by a dedicated microservice, ensuring separation of concerns and scalability.
+            Shopping is simple: find your books, place your order, and follow every step until delivery.
           </p>
         </div>
 
@@ -154,28 +153,28 @@ const HomePage = () => {
             {
               step: '01',
               title: 'Browse & Add to Cart',
-              desc: 'Explore the book catalog served by the Book Service. Add items to your cart stored locally.',
+              desc: 'Explore a wide range of books and add your favorites to cart in one click.',
               color: 'bg-brand-50 border-brand-200 text-brand-600',
               iconColor: 'bg-brand-100',
             },
             {
               step: '02',
               title: 'Place Your Order',
-              desc: 'Checkout sends your order to the Order Service with a "Pending Approval" status.',
+              desc: 'Review your cart, confirm checkout, and place your order securely.',
               color: 'bg-amber-50 border-amber-200 text-amber-600',
               iconColor: 'bg-amber-100',
             },
             {
               step: '03',
               title: 'Admin Approval',
-              desc: 'An admin reviews and approves the order. You\'ll see a notification badge on your Orders menu.',
+              desc: 'Our team reviews and confirms your order so you can proceed to payment.',
               color: 'bg-blue-50 border-blue-200 text-blue-600',
               iconColor: 'bg-blue-100',
             },
             {
               step: '04',
               title: 'Shipment Tracking',
-              desc: 'Admin updates shipment status (Shipped → Delivered). Track your order in real time.',
+              desc: 'Track your order status from shipped to delivered directly from your account.',
               color: 'bg-emerald-50 border-emerald-200 text-emerald-600',
               iconColor: 'bg-emerald-100',
             },
@@ -202,10 +201,10 @@ const HomePage = () => {
               Featured Collection
             </p>
             <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-900">
-              Browse the catalog
+              Featured books you'll love
             </h2>
             <p className="mt-3 max-w-2xl text-slate-600">
-              Books served live from the Book microservice.
+              Hand-picked titles from our catalog across popular genres.
             </p>
           </div>
           <Link to="/books" className="text-sm font-semibold text-brand-600 hover:text-brand-700">
@@ -250,33 +249,33 @@ const HomePage = () => {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-300">
-              Technology Stack
+              Why Readers Choose Us
             </p>
             <h2 className="mt-2 text-3xl font-black tracking-tight">
-              Built with modern cloud-native tools
+              A better online bookstore experience
             </h2>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                name: 'Node.js & Express',
-                desc: 'Lightweight REST APIs across three independent microservices.',
-                badge: 'Backend',
+                name: 'Wide Book Selection',
+                desc: 'Discover titles across fiction, business, technology, and academic categories.',
+                badge: 'Catalog',
               },
               {
-                name: 'MongoDB',
-                desc: 'Each service uses its own isolated MongoDB database (Database per Service pattern).',
-                badge: 'Database',
+                name: 'Fast Ordering',
+                desc: 'Smooth checkout flow with clear order updates and payment confirmation.',
+                badge: 'Checkout',
               },
               {
-                name: 'React + Vite',
-                desc: 'Fast, component-based SPA frontend with Tailwind CSS for styling.',
-                badge: 'Frontend',
+                name: 'Order Tracking',
+                desc: 'Monitor approval, shipment, and delivery progress from your dashboard.',
+                badge: 'Tracking',
               },
               {
-                name: 'Nginx + Docker',
-                desc: 'API gateway routing traffic to services with Docker Compose orchestration.',
-                badge: 'Infrastructure',
+                name: 'Trusted Experience',
+                desc: 'Simple account management, secure access, and reliable storefront performance.',
+                badge: 'Service',
               },
             ].map((tech) => (
               <div

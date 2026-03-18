@@ -37,4 +37,9 @@ export const cancelOrder = (id, data = {}) => API.put(`/orders/${id}/cancel`, da
 export const updateShipmentStatus = (id, data) => API.put(`/orders/${id}/shipment`, data);
 export const updateOrderStatus = (id, data) => API.put(`/orders/${id}/status`, data);
 
+// Payment Service APIs
+export const processPayment = (data) => API.post('/payments', data);
+export const getPaymentsByUser = (userId) => API.get(`/payments/${userId}`);
+export const getAllPayments = () => API.get('/payments');
+
 export default API;

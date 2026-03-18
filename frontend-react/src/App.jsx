@@ -14,9 +14,11 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import UserProfile from './pages/user/UserProfile';
 import UserOrders from './pages/user/UserOrders';
+import OrderPaymentPage from './pages/user/OrderPaymentPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageBooks from './pages/admin/ManageBooks';
 import ManageOrders from './pages/admin/ManageOrders';
+import ManagePayments from './pages/admin/ManagePayments';
 import ManageUsers from './pages/admin/ManageUsers';
 
 function App() {
@@ -42,6 +44,7 @@ function App() {
               >
                 <Route index element={<UserProfile />} />
                 <Route path="orders" element={<UserOrders />} />
+                <Route path="orders/:id/checkout" element={<OrderPaymentPage />} />
               </Route>
             </Route>
 
@@ -56,6 +59,7 @@ function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="books" element={<ManageBooks />} />
               <Route path="orders" element={<ManageOrders />} />
+              <Route path="payments" element={<ManagePayments />} />
               <Route path="users" element={<ManageUsers />} />
             </Route>
 

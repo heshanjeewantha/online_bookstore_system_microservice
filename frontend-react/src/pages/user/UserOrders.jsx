@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getMyOrders } from '../../services/api';
 
@@ -63,7 +64,7 @@ const UserOrders = () => {
       case 'pending_approval':
         return 'Your order is being reviewed by our team. You will be notified once approved.';
       case 'approved':
-        return 'Your order has been approved! Payment will be processed soon.';
+        return 'Your order has been approved. Complete checkout to continue processing.';
       case 'shipped':
         return 'Your order is on its way! Check back for delivery updates.';
       case 'delivered':
@@ -166,7 +167,17 @@ const UserOrders = () => {
 
               <div className="bg-slate-50 p-4 sm:px-6 border-t border-slate-200 flex justify-between items-center">
                 <span className="text-slate-600 font-bold uppercase tracking-wider text-sm">Total Amount</span>
-                <span className="text-2xl font-black text-brand-600 tracking-wide">Rs. {order.totalPrice?.toLocaleString()}</span>
+                <div className="flex items-center gap-3">
+                  {order.orderStatus === 'approved' && (
+                    <Link
+                      to={`/dashboard/orders/${order._id}/checkout`}
+                      className="px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-colors"
+                    >
+                      Checkout
+                    </Link>
+                  )}
+                  <span className="text-2xl font-black text-brand-600 tracking-wide">Rs. {order.totalPrice?.toLocaleString()}</span>
+                </div>
               </div>
             </div>
           ))}
