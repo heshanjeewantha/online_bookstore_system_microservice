@@ -10,7 +10,6 @@ import HomePage from './pages/HomePage';
 import BooksPage from './pages/BooksPage';
 import BookDetailsPage from './pages/BookDetailsPage';
 import CartPage from './pages/CartPage';
-import PaymentPage from './pages/PaymentPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import UserProfile from './pages/user/UserProfile';
@@ -45,15 +44,6 @@ function App() {
                 <Route path="orders" element={<UserOrders />} />
               </Route>
             </Route>
-
-            <Route
-              path="/payment"
-              element={(
-                <PrivateRoute>
-                  <PaymentPage />
-                </PrivateRoute>
-              )}
-            />
 
             <Route
               path="/admin"
