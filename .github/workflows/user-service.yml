@@ -87,7 +87,7 @@ jobs:
           debug: true
           script_stop: true
           script: |
-            set -eu
+            set -u
 
             echo "Connected to $(hostname) as $(whoami)"
             id || true
@@ -123,12 +123,19 @@ jobs:
 
             echo "Using Docker mode: $DOCKER_MODE"
 
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | run_docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-            run_docker pull ${{ env.IMAGE_NAME }}:latest
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | run_docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin || {
+              echo "Docker login failed"
+              exit 1
+            }
+            run_docker pull ${{ env.IMAGE_NAME }}:latest || {
+              echo "Docker pull failed for image: ${{ env.IMAGE_NAME }}:latest"
+              exit 1
+            }
 
             TARGET_CONTAINER="${{ env.CONTAINER_NAME }}"
-            if run_docker ps -a --format '{{.Names}}' | grep -Fxq "$TARGET_CONTAINER"; then
-              run_docker rm -f "$TARGET_CONTAINER"
+            EXISTING_ID="$(run_docker ps -aq --filter "name=^/${TARGET_CONTAINER}$" || true)"
+            if [ -n "$EXISTING_ID" ]; then
+              run_docker rm -f "$TARGET_CONTAINER" || true
             else
               echo "Container $TARGET_CONTAINER not found. Skipping remove."
             fi
@@ -144,6 +151,10 @@ jobs:
               --restart unless-stopped \
               -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
               $ENV_FILE_ARG \
-              ${{ env.IMAGE_NAME }}:latest
+              ${{ env.IMAGE_NAME }}:latest || {
+                echo "Container start failed for: ${{ env.CONTAINER_NAME }}"
+                run_docker ps -a --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
+                exit 1
+              }
 
-            run_docker ps --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+            run_docker ps --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
