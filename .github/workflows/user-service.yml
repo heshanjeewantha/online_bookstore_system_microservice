@@ -126,8 +126,12 @@ jobs:
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | run_docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             run_docker pull ${{ env.IMAGE_NAME }}:latest
 
-            run_docker stop ${{ env.CONTAINER_NAME }} || true
-            run_docker rm ${{ env.CONTAINER_NAME }} || true
+            TARGET_CONTAINER="${{ env.CONTAINER_NAME }}"
+            if run_docker ps -a --format '{{.Names}}' | grep -Fxq "$TARGET_CONTAINER"; then
+              run_docker rm -f "$TARGET_CONTAINER"
+            else
+              echo "Container $TARGET_CONTAINER not found. Skipping remove."
+            fi
 
             ENV_FILE="/opt/online-bookstore/${{ env.SERVICE_PATH }}.env"
             ENV_FILE_ARG=""
