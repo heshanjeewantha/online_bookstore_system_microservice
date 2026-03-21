@@ -18,13 +18,15 @@ concurrency:
 
 env:
   SERVICE_PATH: user-service
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/online-bookstore-user-service
   CONTAINER_NAME: online-bookstore-user-service
   SERVICE_PORT: "5001"
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    environment: user-service
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/online-bookstore-user-service
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,15 +52,18 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    environment: user-service
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/online-bookstore-user-service
     needs: build-and-push
-    if: github.ref == 'refs/heads/main' && secrets.EC2_HOST != '' && secrets.EC2_USERNAME != '' && secrets.EC2_SSH_KEY != ''
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USERNAME }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
           script_stop: true
           script: |
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
