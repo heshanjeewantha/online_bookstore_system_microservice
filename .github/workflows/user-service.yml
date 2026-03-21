@@ -89,16 +89,39 @@ jobs:
           script: |
             set -eu
 
+            echo "Connected to $(hostname) as $(whoami)"
+            id || true
+
+            if command -v docker >/dev/null 2>&1; then
+              docker --version || true
+            fi
+
+            if command -v systemctl >/dev/null 2>&1; then
+              sudo -n systemctl start docker >/dev/null 2>&1 || true
+            fi
+
+            DOCKER_MODE=""
+            if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+              DOCKER_MODE="docker"
+            elif command -v sudo >/dev/null 2>&1 && sudo -n docker info >/dev/null 2>&1; then
+              DOCKER_MODE="sudo"
+            fi
+
             run_docker() {
-              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+              if [ "$DOCKER_MODE" = "docker" ]; then
                 docker "$@"
-              elif command -v sudo >/dev/null 2>&1 && sudo docker info >/dev/null 2>&1; then
-                sudo docker "$@"
+              elif [ "$DOCKER_MODE" = "sudo" ]; then
+                sudo -n docker "$@"
               else
                 echo "Docker is not installed or current user cannot access Docker daemon"
+                if command -v systemctl >/dev/null 2>&1; then
+                  sudo -n systemctl status docker --no-pager || systemctl status docker --no-pager || true
+                fi
                 exit 1
               fi
             }
+
+            echo "Using Docker mode: $DOCKER_MODE"
 
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | run_docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             run_docker pull ${{ env.IMAGE_NAME }}:latest
