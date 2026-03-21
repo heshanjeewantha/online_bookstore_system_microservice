@@ -78,11 +78,16 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT != '' && secrets.DEPLOY_PORT || '22' }}
           username: ${{ secrets.DEPLOY_USERNAME }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }}
+          timeout: 60s
+          command_timeout: 20m
+          debug: true
           script_stop: true
           script: |
-            set -euo pipefail
+            set -eu
 
             run_docker() {
               if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
