@@ -144,6 +144,10 @@ jobs:
             ENV_FILE_ARG=""
             if [ -f "$ENV_FILE" ]; then
               ENV_FILE_ARG="--env-file $ENV_FILE"
+            else
+              echo "Missing required env file: $ENV_FILE"
+              echo "Create the file with required variables (MONGO_URI, JWT_SECRET, etc.) before deployment."
+              exit 1
             fi
 
             run_docker run -d \
