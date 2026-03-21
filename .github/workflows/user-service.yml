@@ -17,6 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   SERVICE_PATH: user-service
   CONTAINER_NAME: online-bookstore-user-service
   SERVICE_PORT: "5001"
@@ -58,6 +59,21 @@ jobs:
     needs: build-and-push
     if: github.ref == 'refs/heads/main'
     steps:
+      - name: Validate required deploy secrets
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USERNAME: ${{ secrets.DEPLOY_USERNAME }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          [ -n "$DEPLOY_HOST" ] || { echo "Missing secret: DEPLOY_HOST"; exit 1; }
+          [ -n "$DEPLOY_USERNAME" ] || { echo "Missing secret: DEPLOY_USERNAME"; exit 1; }
+          [ -n "$DEPLOY_SSH_KEY" ] || { echo "Missing secret: DEPLOY_SSH_KEY"; exit 1; }
+          [ -n "$DOCKERHUB_USERNAME" ] || { echo "Missing secret: DOCKERHUB_USERNAME"; exit 1; }
+          [ -n "$DOCKERHUB_TOKEN" ] || { echo "Missing secret: DOCKERHUB_TOKEN"; exit 1; }
+
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -66,11 +82,24 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script_stop: true
           script: |
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-            docker pull ${{ env.IMAGE_NAME }}:latest
+            set -euo pipefail
 
-            docker stop ${{ env.CONTAINER_NAME }} || true
-            docker rm ${{ env.CONTAINER_NAME }} || true
+            run_docker() {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker "$@"
+              elif command -v sudo >/dev/null 2>&1 && sudo docker info >/dev/null 2>&1; then
+                sudo docker "$@"
+              else
+                echo "Docker is not installed or current user cannot access Docker daemon"
+                exit 1
+              fi
+            }
+
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | run_docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            run_docker pull ${{ env.IMAGE_NAME }}:latest
+
+            run_docker stop ${{ env.CONTAINER_NAME }} || true
+            run_docker rm ${{ env.CONTAINER_NAME }} || true
 
             ENV_FILE="/opt/online-bookstore/${{ env.SERVICE_PATH }}.env"
             ENV_FILE_ARG=""
@@ -78,9 +107,11 @@ jobs:
               ENV_FILE_ARG="--env-file $ENV_FILE"
             fi
 
-            docker run -d \
+            run_docker run -d \
               --name ${{ env.CONTAINER_NAME }} \
               --restart unless-stopped \
               -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
               $ENV_FILE_ARG \
               ${{ env.IMAGE_NAME }}:latest
+
+            run_docker ps --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
