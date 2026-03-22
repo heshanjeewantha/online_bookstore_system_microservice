@@ -4,6 +4,7 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const orderRoutes = require('./routes/orderRoutes');
+const internalRoutes = require('./routes/internalRoutes');
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/orders', orderRoutes);
+app.use('/internal/orders', internalRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

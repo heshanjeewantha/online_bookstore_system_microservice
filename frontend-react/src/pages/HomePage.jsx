@@ -36,9 +36,9 @@ const HomePage = () => {
   return (
     <div className="bg-slate-50">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-slate-950 text-white">
+      <section className="relative overflow-hidden text-white bg-slate-950">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.25),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(245,158,11,0.2),_transparent_30%)]" />
-        <div className="relative mx-auto flex max-w-7xl flex-col gap-12 px-4 py-20 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-28">
+        <div className="relative flex flex-col gap-12 px-4 py-20 mx-auto max-w-7xl sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-28">
           <div className="max-w-3xl">
             <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-brand-300">
               Curated Reads for Every Reader
@@ -46,24 +46,24 @@ const HomePage = () => {
             <h1 className="mt-6 text-5xl font-black leading-tight tracking-tight sm:text-6xl">
               Discover your next favorite book.
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+            <p className="max-w-2xl mt-6 text-lg leading-8 text-slate-300">
               Welcome to PothaGedara, your online bookstore for fiction, non-fiction, and academic titles.
               Browse new arrivals, place orders in minutes, and track delivery updates from your account dashboard.
             </p>
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <Link to="/books" className="btn-primary text-center">
+            <div className="flex flex-col gap-4 mt-8 sm:flex-row">
+              <Link to="/books" className="text-center btn-primary">
                 Browse Catalog
               </Link>
-              <Link to="/register" className="btn-secondary border-white/15 bg-white/10 text-white hover:bg-white/15">
+              <Link to="/register" className="text-white btn-secondary border-white/15 bg-white/10 hover:bg-white/15">
                 Create Account
               </Link>
             </div>
           </div>
 
           {/* Circular Books Slideshow */}
-          <div className="relative w-full max-w-xl h-80 sm:h-96 flex items-center justify-center overflow-hidden perspective-1000 hidden md:flex">
+          <div className="relative items-center justify-center hidden w-full max-w-xl overflow-hidden h-80 perspective-1000 sm:h-96 md:flex">
             {loading ? (
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-500 border-t-white" />
+              <div className="w-10 h-10 border-4 rounded-full animate-spin border-brand-500 border-t-white" />
             ) : featuredBooks.length > 0 ? (
               <div className="relative w-48 h-72">
                 {featuredBooks.map((book, idx) => {
@@ -111,16 +111,16 @@ const HomePage = () => {
                           <img
                             src={book.image}
                             alt={book.title}
-                            className="w-full h-full object-cover"
+                            className="object-cover w-full h-full"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-500">
+                          <div className="flex items-center justify-center w-full h-full text-slate-500">
                             No Cover
                           </div>
                         )}
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                          <p className="text-white font-bold text-sm truncate">{book.title}</p>
-                          <p className="text-brand-300 text-xs truncate">{book.author}</p>
+                        <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                          <p className="text-sm font-bold text-white truncate">{book.title}</p>
+                          <p className="text-xs truncate text-brand-300">{book.author}</p>
                         </div>
                       </div>
                     </div>
@@ -128,14 +128,14 @@ const HomePage = () => {
                 })}
               </div>
             ) : (
-              <div className="text-slate-500 text-center">No books available for slideshow</div>
+              <div className="text-center text-slate-500">No books available for slideshow</div>
             )}
           </div>
         </div>
       </section>
 
       {/* Order Flow Section */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <section className="px-4 py-16 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="mb-10 text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
             How It Works
@@ -143,7 +143,7 @@ const HomePage = () => {
           <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-900">
             From browsing to delivery
           </h2>
-          <p className="mt-3 max-w-2xl mx-auto text-slate-600">
+          <p className="max-w-2xl mx-auto mt-3 text-slate-600">
             Shopping is simple: find your books, place your order, and follow every step until delivery.
           </p>
         </div>
@@ -186,16 +186,66 @@ const HomePage = () => {
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm mb-4 ${item.iconColor}`}>
                 {item.step}
               </div>
-              <h3 className="text-base font-bold mb-2">{item.title}</h3>
+              <h3 className="mb-2 text-base font-bold">{item.title}</h3>
               <p className="text-sm leading-relaxed opacity-80">{item.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
+      {/* Inter-Service Communication Section */}
+      <section className="px-4 pb-16 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
+            Inter-Service Communication
+          </p>
+          <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+            How services collaborate behind the scenes
+          </h2>
+          <p className="max-w-3xl mt-3 text-slate-600">
+            This system uses secure service-to-service APIs to validate data, synchronize order lifecycle updates,
+            and keep user, catalog, order, and payment information consistent across microservices.
+          </p>
+
+          <div className="grid gap-4 mt-8 md:grid-cols-2 xl:grid-cols-4">
+            <div className="p-5 border border-blue-200 rounded-2xl bg-blue-50">
+              <p className="text-xs font-bold tracking-widest text-blue-700 uppercase">Order to User</p>
+              <h3 className="mt-2 text-base font-bold text-blue-900">Fetches customer profile</h3>
+              <p className="mt-2 text-sm leading-relaxed text-blue-900/80">
+                During checkout, order-service requests user name and email from user-service internal endpoints.
+              </p>
+            </div>
+
+            <div className="p-5 border rounded-2xl border-amber-200 bg-amber-50">
+              <p className="text-xs font-bold tracking-widest uppercase text-amber-700">Order to Book</p>
+              <h3 className="mt-2 text-base font-bold text-amber-900">Validates price and stock</h3>
+              <p className="mt-2 text-sm leading-relaxed text-amber-900/80">
+                Order-service verifies live book details and confirms stock before approval.
+              </p>
+            </div>
+
+            <div className="p-5 border rounded-2xl border-emerald-200 bg-emerald-50">
+              <p className="text-xs font-bold tracking-widest uppercase text-emerald-700">Payment to Order</p>
+              <h3 className="mt-2 text-base font-bold text-emerald-900">Confirms and marks paid</h3>
+              <p className="mt-2 text-sm leading-relaxed text-emerald-900/80">
+                Payment-service checks approved order status, then updates order-service to mark it as paid.
+              </p>
+            </div>
+
+            <div className="p-5 border rounded-2xl border-violet-200 bg-violet-50">
+              <p className="text-xs font-bold tracking-widest uppercase text-violet-700">Internal Security</p>
+              <h3 className="mt-2 text-base font-bold text-violet-900">Protected internal APIs</h3>
+              <p className="mt-2 text-sm leading-relaxed text-violet-900/80">
+                Internal endpoints are restricted with x-internal-api-key so only trusted services can access them.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Featured Books Marquee */}
-      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <section className="px-4 pb-16 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-4 mb-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
               Featured Collection
@@ -203,7 +253,7 @@ const HomePage = () => {
             <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-900">
               Featured books you'll love
             </h2>
-            <p className="mt-3 max-w-2xl text-slate-600">
+            <p className="max-w-2xl mt-3 text-slate-600">
               Hand-picked titles from our catalog across popular genres.
             </p>
           </div>
@@ -214,7 +264,7 @@ const HomePage = () => {
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+            <div className="w-12 h-12 border-4 rounded-full animate-spin border-brand-600 border-t-transparent" />
           </div>
         ) : featuredBooks.length === 0 ? (
           <div className="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-sm">
@@ -229,12 +279,12 @@ const HomePage = () => {
               className="flex w-max animate-marquee-slow"
               style={{ '--marquee-duration': marqueeDuration }}
             >
-              <div className="flex shrink-0 gap-6 pr-6">
+              <div className="flex gap-6 pr-6 shrink-0">
                 {featuredBooks.map((book) => (
                   <BookCard key={`featured-a-${book._id}`} book={book} variant="featured" />
                 ))}
               </div>
-              <div className="flex shrink-0 gap-6 pr-6" aria-hidden="true">
+              <div className="flex gap-6 pr-6 shrink-0" aria-hidden="true">
                 {featuredBooks.map((book) => (
                   <BookCard key={`featured-b-${book._id}`} book={book} variant="featured" />
                 ))}
@@ -245,9 +295,9 @@ const HomePage = () => {
       </section>
 
       {/* Tech Stack Section */}
-      <section className="bg-slate-950 text-white py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+      <section className="py-16 text-white bg-slate-950">
+        <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <div className="mb-12 text-center">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-300">
               Why Readers Choose Us
             </p>
@@ -280,13 +330,13 @@ const HomePage = () => {
             ].map((tech) => (
               <div
                 key={tech.name}
-                className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur"
+                className="p-6 border rounded-2xl border-white/10 bg-white/5 backdrop-blur"
               >
                 <span className="inline-flex rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-300 mb-4">
                   {tech.badge}
                 </span>
-                <h3 className="text-white font-bold text-lg mb-2">{tech.name}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{tech.desc}</p>
+                <h3 className="mb-2 text-lg font-bold text-white">{tech.name}</h3>
+                <p className="text-sm leading-relaxed text-slate-400">{tech.desc}</p>
               </div>
             ))}
           </div>

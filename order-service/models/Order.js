@@ -66,7 +66,7 @@ const orderSchema = new mongoose.Schema(
     },
     orderStatus: {
       type: String,
-      enum: ['pending_approval', 'approved', 'shipped', 'delivered', 'cancelled'],
+      enum: ['pending_approval', 'approved', 'paid', 'shipped', 'delivered', 'cancelled'],
       default: 'pending_approval',
       index: true,
     },
@@ -76,6 +76,11 @@ const orderSchema = new mongoose.Schema(
       default: '',
     },
     adminNote: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    paymentTransactionId: {
       type: String,
       trim: true,
       default: '',
