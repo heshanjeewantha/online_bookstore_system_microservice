@@ -24,6 +24,7 @@ services:
       NODE_ENV: production
       PORT: 5001
       MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
+      INTERNAL_API_KEY: "super-secret-internal-key"
       JWT_SECRET: supersecretjwtkey123456789
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
@@ -49,6 +50,7 @@ services:
       NODE_ENV: production
       PORT: 5002
       MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
+      INTERNAL_API_KEY: "super-secret-internal-key"
       JWT_SECRET: supersecretjwtkey123456789
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
@@ -68,6 +70,9 @@ services:
       NODE_ENV: production
       PORT: 5003
       MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
+      INTERNAL_API_KEY: "super-secret-internal-key"
+      USER_SERVICE_URL: "http://user-service:5001"
+      BOOK_SERVICE_URL: "http://book-service:5002"
       JWT_SECRET: supersecretjwtkey123456789
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
@@ -86,6 +91,8 @@ services:
       NODE_ENV: production
       PORT: 5004
       MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
+      INTERNAL_API_KEY: "super-secret-internal-key"
+      ORDER_SERVICE_URL: "http://order-service:5003"
       JWT_SECRET: supersecretjwtkey123456789
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
