@@ -88,56 +88,31 @@ jobs:
           script_stop: true
           script: |
             set -u
+            export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/snap/bin
 
             echo "Connected to $(hostname) as $(whoami)"
-            id || true
-
-            if command -v docker > /dev/null 2>&1; then
-              docker --version || true
-            fi
-
+            
+            # Start docker if it's not running
             if command -v systemctl > /dev/null 2>&1; then
-              sudo -n systemctl start docker > /dev/null 2>&1 || true
+              sudo systemctl start docker || true
             fi
+            
+            sudo docker --version
 
-            DOCKER_MODE=""
-            if command -v docker > /dev/null 2>&1 && docker info > /dev/null 2>&1; then
-              DOCKER_MODE="docker"
-            elif command -v sudo > /dev/null 2>&1 && sudo -n docker info > /dev/null 2>&1; then
-              DOCKER_MODE="sudo"
-            fi
-
-            run_docker() {
-              if [ "$DOCKER_MODE" = "docker" ]; then
-                docker "$@"
-              elif [ "$DOCKER_MODE" = "sudo" ]; then
-                sudo -n docker "$@"
-              else
-                echo "Docker is not installed or current user cannot access Docker daemon"
-                if command -v systemctl > /dev/null 2>&1; then
-                  sudo -n systemctl status docker --no-pager || systemctl status docker --no-pager || true
-                fi
-                exit 1
-              fi
-            }
-
-            echo "Using Docker mode: $DOCKER_MODE"
-
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | run_docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin || {
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin || {
               echo "Docker login failed"
               exit 1
             }
-            run_docker pull ${{ env.IMAGE_NAME }}:latest || {
+            
+            sudo docker pull ${{ env.IMAGE_NAME }}:latest || {
               echo "Docker pull failed for image: ${{ env.IMAGE_NAME }}:latest"
               exit 1
             }
 
             TARGET_CONTAINER="${{ env.CONTAINER_NAME }}"
-            EXISTING_ID="$(run_docker ps -aq --filter "name=^/${TARGET_CONTAINER}$" || true)"
+            EXISTING_ID="$(sudo docker ps -aq --filter "name=^/${TARGET_CONTAINER}$" || true)"
             if [ -n "$EXISTING_ID" ]; then
-              run_docker rm -f "$TARGET_CONTAINER" || true
-            else
-              echo "Container $TARGET_CONTAINER not found. Skipping remove."
+              sudo docker rm -f "$TARGET_CONTAINER" || true
             fi
 
             # Automatically create the .env directory and file
@@ -153,15 +128,15 @@ jobs:
             sudo chmod 600 $ENV_FILE
             ENV_FILE_ARG="--env-file $ENV_FILE"
 
-            run_docker run -d \
+            sudo docker run -d \
               --name ${{ env.CONTAINER_NAME }} \
               --restart unless-stopped \
               -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
               $ENV_FILE_ARG \
               ${{ env.IMAGE_NAME }}:latest || {
                 echo "Container start failed for: ${{ env.CONTAINER_NAME }}"
-                run_docker ps -a --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
+                sudo docker ps -a --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
                 exit 1
               }
 
-            run_docker ps --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
+            sudo docker ps --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
