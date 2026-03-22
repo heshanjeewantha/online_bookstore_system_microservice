@@ -32,6 +32,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5004;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Payment Service running on http://localhost:${PORT}`);
 });

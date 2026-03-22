@@ -1,0 +1,96 @@
+openapi: 3.0.3
+info:
+  title: Order Service API
+  version: 1.0.0
+  description: API contract for order management.
+servers:
+  - url: http://164.92.92.45:5003
+    description: Order Service
+paths:
+  /api/orders:
+    get:
+      summary: Get all orders
+      responses:
+        '200':
+          description: List of orders
+    post:
+      summary: Create a new order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderInput'
+      responses:
+        '201':
+          description: Order created
+  /api/orders/{id}:
+    get:
+      summary: Get order by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order details
+        '404':
+          description: Order not found
+    put:
+      summary: Update order by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderInput'
+      responses:
+        '200':
+          description: Order updated
+        '404':
+          description: Order not found
+    delete:
+      summary: Delete order by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Order deleted
+        '404':
+          description: Order not found
+components:
+  schemas:
+    OrderInput:
+      type: object
+      required:
+        - userId
+        - items
+        - total
+      properties:
+        userId:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              bookId:
+                type: string
+              quantity:
+                type: integer
+        total:
+          type: number
+        status:
+          type: string

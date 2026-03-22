@@ -5,6 +5,7 @@ const connectDB = require('./config/db');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const { seedDefaultUsers } = require('./seeders/bootstrapUsers');
 const userRoutes = require('./routes/userRoutes');
+const internalRoutes = require('./routes/internalRoutes');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/users', userRoutes);
+app.use('/internal/users', internalRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

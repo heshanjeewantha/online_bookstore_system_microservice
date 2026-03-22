@@ -1,0 +1,89 @@
+openapi: 3.0.3
+info:
+  title: Payment Service API
+  version: 1.0.0
+  description: API contract for payment processing.
+servers:
+  - url: http://129.212.233.148:3003
+    description: Payment Service
+paths:
+  /api/payments:
+    get:
+      summary: Get all payments
+      responses:
+        '200':
+          description: List of payments
+    post:
+      summary: Create a new payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentInput'
+      responses:
+        '201':
+          description: Payment created
+  /api/payments/{id}:
+    get:
+      summary: Get payment by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment details
+        '404':
+          description: Payment not found
+    put:
+      summary: Update payment by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentInput'
+      responses:
+        '200':
+          description: Payment updated
+        '404':
+          description: Payment not found
+    delete:
+      summary: Delete payment by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Payment deleted
+        '404':
+          description: Payment not found
+components:
+  schemas:
+    PaymentInput:
+      type: object
+      required:
+        - orderId
+        - amount
+        - method
+      properties:
+        orderId:
+          type: string
+        amount:
+          type: number
+        method:
+          type: string
+        status:
+          type: string

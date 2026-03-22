@@ -5,6 +5,7 @@ const connectDB = require('./config/db');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const { seedDefaultBooks } = require('./seeders/bootstrapBooks');
 const bookRoutes = require('./routes/bookRoutes');
+const internalRoutes = require('./routes/internalRoutes');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/books', bookRoutes);
+app.use('/internal/books', internalRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

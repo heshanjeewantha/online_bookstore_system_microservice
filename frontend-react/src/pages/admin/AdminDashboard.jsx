@@ -94,6 +94,40 @@ const AdminDashboard = () => {
           </Link>
         ))}
       </div>
+
+      <section className="mt-10 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
+          Inter-Service Communication
+        </p>
+        <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
+          Active integration flows in production
+        </h2>
+        <p className="mt-3 max-w-3xl text-sm text-slate-600">
+          The microservices exchange data through secured internal APIs so order, payment, user, and catalog operations remain synchronized.
+        </p>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-blue-700">Order to User</p>
+            <p className="mt-2 text-sm text-blue-900/80">Order service fetches trusted user name and email during checkout.</p>
+          </div>
+
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-700">Order to Book</p>
+            <p className="mt-2 text-sm text-amber-900/80">Order service validates live price and stock, then decrements stock on approval.</p>
+          </div>
+
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-emerald-700">Payment to Order</p>
+            <p className="mt-2 text-sm text-emerald-900/80">Payment service verifies order status and marks approved orders as paid.</p>
+          </div>
+
+          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-violet-700">Internal Security</p>
+            <p className="mt-2 text-sm text-violet-900/80">Internal endpoints are protected with x-internal-api-key validation.</p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

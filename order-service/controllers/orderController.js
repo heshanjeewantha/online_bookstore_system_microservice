@@ -1,5 +1,15 @@
 const { validationResult } = require('express-validator');
+const axios = require('axios');
 const Order = require('../models/Order');
+
+const BOOK_SERVICE_URL = process.env.BOOK_SERVICE_URL || 'http://localhost:5002';
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:5001';
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
+
+const internalHeaders = () => ({
+  'x-internal-api-key': INTERNAL_API_KEY,
+  'Content-Type': 'application/json',
+});
 
 const createHttpError = (statusCode, message) => {
   const error = new Error(message);
@@ -10,6 +20,7 @@ const createHttpError = (statusCode, message) => {
 // @desc    Create a new order (user checkout)
 // @route   POST /orders
 // @access  Private (authenticated user)
+// Inter-service: calls Book Service to validate books & prices, calls User Service to fetch user info
 const createOrder = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -19,6 +30,25 @@ const createOrder = async (req, res, next) => {
   try {
     const { items, shippingAddress } = req.body;
 
+    // ── Inter-service call: Fetch user info from User Service ──
+    let userName = req.body.userName || '';
+    let userEmail = req.body.userEmail || '';
+
+    try {
+      const userResponse = await axios.get(
+        `${USER_SERVICE_URL}/internal/users/${req.user.id}`,
+        { headers: internalHeaders() }
+      );
+      if (userResponse.data.success) {
+        userName = userResponse.data.user.name;
+        userEmail = userResponse.data.user.email;
+      }
+    } catch (userErr) {
+      console.warn(`[Order→User] Failed to fetch user info: ${userErr.message}`);
+      // Continue with data from request body if user-service is unavailable
+    }
+
+    // ── Inter-service call: Validate books and get real prices from Book Service ──
     let totalPrice = 0;
     const orderItems = [];
 
@@ -29,25 +59,61 @@ const createOrder = async (req, res, next) => {
       if (!item.quantity || item.quantity < 1) {
         throw createHttpError(400, 'Quantity must be at least 1');
       }
-      if (item.price === undefined || item.price < 0) {
-        throw createHttpError(400, 'Price must be a valid number');
+
+      let bookPrice = item.price;
+      let bookTitle = item.title;
+      let bookAuthor = item.author || '';
+      let bookImage = item.image || '';
+
+      try {
+        const bookResponse = await axios.get(
+          `${BOOK_SERVICE_URL}/internal/books/${item.bookId}`,
+          { headers: internalHeaders() }
+        );
+
+        if (bookResponse.data.success) {
+          const book = bookResponse.data.book;
+          // Use actual price from book-service (prevents price tampering)
+          bookPrice = book.price;
+          bookTitle = book.title;
+          bookAuthor = book.author;
+          bookImage = book.image;
+
+          // Validate stock availability
+          if (book.stock < item.quantity) {
+            throw createHttpError(
+              400,
+              `Insufficient stock for "${book.title}". Available: ${book.stock}, requested: ${item.quantity}`
+            );
+          }
+        }
+      } catch (bookErr) {
+        // If it's our own HTTP error (stock issue), re-throw it
+        if (bookErr.statusCode) {
+          throw bookErr;
+        }
+        console.warn(`[Order→Book] Failed to validate book ${item.bookId}: ${bookErr.message}`);
+        // If book-service is unavailable, fall back to client-provided data
+        if (bookPrice === undefined || bookPrice < 0) {
+          throw createHttpError(400, 'Price must be a valid number');
+        }
       }
 
-      totalPrice += item.price * item.quantity;
+      totalPrice += bookPrice * item.quantity;
       orderItems.push({
         bookId: item.bookId,
-        title: item.title,
-        author: item.author || '',
-        image: item.image || '',
+        title: bookTitle,
+        author: bookAuthor,
+        image: bookImage,
         quantity: item.quantity,
-        price: item.price,
+        price: bookPrice,
       });
     }
 
     const order = await Order.create({
       userId: req.user.id,
-      userName: req.body.userName || '',
-      userEmail: req.body.userEmail || '',
+      userName,
+      userEmail,
       items: orderItems,
       totalPrice,
       shippingAddress: shippingAddress || '',
@@ -152,6 +218,7 @@ const getOrderById = async (req, res, next) => {
 // @desc    Admin approve an order
 // @route   PUT /orders/:id/approve
 // @access  Private/Admin
+// Inter-service: calls Book Service to decrement stock for each item
 const approveOrder = async (req, res, next) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -164,6 +231,29 @@ const approveOrder = async (req, res, next) => {
       throw createHttpError(400, `Cannot approve an order with status: ${order.orderStatus}`);
     }
 
+    // ── Inter-service call: Decrement stock in Book Service for each item ──
+    const stockErrors = [];
+    for (const item of order.items) {
+      try {
+        await axios.put(
+          `${BOOK_SERVICE_URL}/internal/books/${item.bookId}/decrement-stock`,
+          { quantity: item.quantity },
+          { headers: internalHeaders() }
+        );
+      } catch (stockErr) {
+        const msg = stockErr.response?.data?.message || stockErr.message;
+        stockErrors.push(`Book "${item.title}": ${msg}`);
+      }
+    }
+
+    if (stockErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to decrement stock for some items',
+        errors: stockErrors,
+      });
+    }
+
     order.orderStatus = 'approved';
     if (req.body.adminNote) {
       order.adminNote = req.body.adminNote;
@@ -172,7 +262,7 @@ const approveOrder = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'Order approved successfully',
+      message: 'Order approved successfully. Stock updated in Book Service.',
       order: updatedOrder,
     });
   } catch (error) {
@@ -259,7 +349,7 @@ const updateShipmentStatus = async (req, res, next) => {
 const updateOrderStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
-    const validStatuses = ['pending_approval', 'approved', 'shipped', 'delivered', 'cancelled'];
+    const validStatuses = ['pending_approval', 'approved', 'paid', 'shipped', 'delivered', 'cancelled'];
 
     if (!validStatuses.includes(status)) {
       throw createHttpError(400, `Invalid status. Must be one of: ${validStatuses.join(', ')}`);
