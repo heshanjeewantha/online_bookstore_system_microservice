@@ -1,45 +1,38 @@
-import axios from 'axios';
+import { userApi, bookApi, orderApi, paymentApi } from '../api/axiosSetup';
 
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  headers: { 'Content-Type': 'application/json' },
-});
+// User Service APIs (Base URL is already /api/users)
+export const registerUser = (data) => userApi.post('/register', data);
+export const loginUser = (data) => userApi.post('/login', data);
+export const getProfile = () => userApi.get('/profile');
+export const updateProfile = (data) => userApi.put('/profile', data);
+export const getUsers = () => userApi.get('/');
 
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('pg_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+// Book Service APIs (Base URL is already /api/books)
+export const getBooks = (params = {}) => bookApi.get('/', { params });
+export const getBookById = (id) => bookApi.get(`/${id}`);
+export const createBook = (data) => bookApi.post('/', data);
+export const updateBook = (id, data) => bookApi.put(`/${id}`, data);
+export const deleteBook = (id) => bookApi.delete(`/${id}`);
 
-  return config;
-});
+// Order Service APIs (Base URL is already /api/orders)
+export const createOrder = (data) => orderApi.post('/', data);
+export const getMyOrders = () => orderApi.get('/my-orders');
+export const getPendingPaymentCount = () => orderApi.get('/pending-payment-count');
+export const getAllOrders = (params = {}) => orderApi.get('/', { params });
+export const getOrderById = (id) => orderApi.get(`/${id}`);
+export const approveOrder = (id, data = {}) => orderApi.put(`/${id}/approve`, data);
+export const cancelOrder = (id, data = {}) => orderApi.put(`/${id}/cancel`, data);
+export const updateShipmentStatus = (id, data) => orderApi.put(`/${id}/shipment`, data);
+export const updateOrderStatus = (id, data) => orderApi.put(`/${id}/status`, data);
 
-export const registerUser = (data) => API.post('/users/register', data);
-export const loginUser = (data) => API.post('/users/login', data);
-export const getProfile = () => API.get('/users/profile');
-export const updateProfile = (data) => API.put('/users/profile', data);
-export const getUsers = () => API.get('/users');
+// Payment Service APIs (Base URL is already /api/payments)
+export const processPayment = (data) => paymentApi.post('/', data);
+export const getPaymentsByUser = (userId) => paymentApi.get(`/${userId}`);
+export const getAllPayments = () => paymentApi.get('/');
 
-export const getBooks = (params = {}) => API.get('/books', { params });
-export const getBookById = (id) => API.get(`/books/${id}`);
-export const createBook = (data) => API.post('/books', data);
-export const updateBook = (id, data) => API.put(`/books/${id}`, data);
-export const deleteBook = (id) => API.delete(`/books/${id}`);
-
-// Order Service APIs
-export const createOrder = (data) => API.post('/orders', data);
-export const getMyOrders = () => API.get('/orders/my-orders');
-export const getPendingPaymentCount = () => API.get('/orders/pending-payment-count');
-export const getAllOrders = (params = {}) => API.get('/orders', { params });
-export const getOrderById = (id) => API.get(`/orders/${id}`);
-export const approveOrder = (id, data = {}) => API.put(`/orders/${id}/approve`, data);
-export const cancelOrder = (id, data = {}) => API.put(`/orders/${id}/cancel`, data);
-export const updateShipmentStatus = (id, data) => API.put(`/orders/${id}/shipment`, data);
-export const updateOrderStatus = (id, data) => API.put(`/orders/${id}/status`, data);
-
-// Payment Service APIs
-export const processPayment = (data) => API.post('/payments', data);
-export const getPaymentsByUser = (userId) => API.get(`/payments/${userId}`);
-export const getAllPayments = () => API.get('/payments');
-
-export default API;
+export default {
+  userApi,
+  bookApi,
+  orderApi,
+  paymentApi
+};
