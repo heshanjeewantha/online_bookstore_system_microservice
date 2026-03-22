@@ -34,6 +34,9 @@ services:
       DEFAULT_USER_NAME: Kasun Perera
       DEFAULT_USER_EMAIL: kasun@example.com
       DEFAULT_USER_PASSWORD: Test@123
+      INTERNAL_API_KEY: "super-secret-internal-key"
+      ORDER_SERVICE_URL: "http://order-service:5003"
+      PAYMENT_SERVICE_URL: "http://payment-service:5004"
     depends_on:
       mongo:
         condition: service_healthy
@@ -53,6 +56,7 @@ services:
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
       ENABLE_BOOTSTRAP_BOOKS: "true"
+      ORDER_SERVICE_URL: "http://order-service:5003"
     depends_on:
       mongo:
         condition: service_healthy

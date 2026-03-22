@@ -287,6 +287,88 @@ const updateOrderStatus = async (req, res, next) => {
   }
 };
 
+// @desc    [INTERNAL] Check if a book has any active (non-cancelled) orders
+//          Called by Book Service before deleting a book — Safe Delete
+// @route   GET /internal/orders/check-book/:bookId
+// @access  Internal only (x-internal-api-key)
+const checkBookInOrders = async (req, res, next) => {
+  try {
+    const { bookId } = req.params;
+    const activeStatuses = ['pending_approval', 'approved', 'shipped'];
+
+    const count = await Order.countDocuments({
+      'items.bookId': bookId,
+      orderStatus: { $in: activeStatuses },
+    });
+
+    return res.status(200).json({
+      success: true,
+      hasActiveOrders: count > 0,
+      count,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    [INTERNAL] Get total quantity sold per book across all delivered/paid orders
+//          Called by Book Service to compute Best Sellers
+// @route   GET /internal/orders/book-sales
+// @access  Internal only (x-internal-api-key)
+const getBookSales = async (req, res, next) => {
+  try {
+    const pipeline = [
+      // Only count completed orders
+      { $match: { orderStatus: { $in: ['shipped', 'delivered', 'approved'] } } },
+      // Unwind items array so each item is a separate document
+      { $unwind: '$items' },
+      // Group by bookId, summing quantities
+      {
+        $group: {
+          _id: '$items.bookId',
+          totalSold: { $sum: '$items.quantity' },
+        },
+      },
+    ];
+
+    const results = await Order.aggregate(pipeline);
+
+    // Convert array to a map: { bookId: totalSold }
+    const sales = {};
+    results.forEach(({ _id, totalSold }) => {
+      if (_id) sales[_id] = totalSold;
+    });
+
+    return res.status(200).json({ success: true, sales });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    [INTERNAL] Check if a user has any active (non-cancelled) orders
+//          Called by User Service before deleting an account — Safe Account Deletion
+// @route   GET /internal/orders/check-user/:userId
+// @access  Internal only (x-internal-api-key)
+const checkActiveOrdersByUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const activeStatuses = ['pending_approval', 'approved', 'shipped'];
+
+    const count = await Order.countDocuments({
+      userId,
+      orderStatus: { $in: activeStatuses },
+    });
+
+    return res.status(200).json({
+      success: true,
+      hasActiveOrders: count > 0,
+      count,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createOrder,
   getAllOrders,
@@ -297,4 +379,7 @@ module.exports = {
   cancelOrder,
   updateShipmentStatus,
   updateOrderStatus,
+  checkBookInOrders,
+  getBookSales,
+  checkActiveOrdersByUser,
 };

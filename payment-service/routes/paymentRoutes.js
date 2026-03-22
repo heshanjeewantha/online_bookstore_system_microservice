@@ -4,8 +4,10 @@ const {
   processPayment,
   getPaymentsByUser,
   getAllPayments,
+  checkProcessingPaymentsByUser,
 } = require('../controllers/paymentController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { internalOnly } = require('../middleware/internalMiddleware');
 
 const router = express.Router();
 
@@ -36,5 +38,8 @@ router.get(
 
 // GET /payments (admin only)
 router.get('/', protect, adminOnly, getAllPayments);
+
+// ── Internal routes (service-to-service only) ─────────────────────────────────
+router.get('/internal/payments/check-user/:userId', internalOnly, checkProcessingPaymentsByUser);
 
 module.exports = router;
