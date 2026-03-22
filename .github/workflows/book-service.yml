@@ -124,6 +124,9 @@ jobs:
             echo "MONGO_URI=${{ secrets.MONGO_URI }}" | sudo tee -a $ENV_FILE > /dev/null
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" | sudo tee -a $ENV_FILE > /dev/null
             echo "CLIENT_ORIGIN=${{ secrets.CLIENT_ORIGIN }}" | sudo tee -a $ENV_FILE > /dev/null
+            echo "ENABLE_BOOTSTRAP_BOOKS=${{ secrets.ENABLE_BOOTSTRAP_BOOKS }}" | sudo tee -a $ENV_FILE > /dev/null
+            echo "INTERNAL_API_KEY=${{ secrets.INTERNAL_API_KEY }}" | sudo tee -a $ENV_FILE > /dev/null
+            echo "ORDER_SERVICE_URL=${{ secrets.ORDER_SERVICE_URL }}" | sudo tee -a $ENV_FILE > /dev/null
             
             sudo chmod 600 $ENV_FILE
             ENV_FILE_ARG="--env-file $ENV_FILE"
