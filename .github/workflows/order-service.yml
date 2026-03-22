@@ -1,0 +1,175 @@
+name: order-service CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "order-service/**"
+      - ".github/workflows/order-service.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: order-service-cicd
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  SERVICE_PATH: order-service
+  CONTAINER_NAME: online-bookstore-order-service
+  SERVICE_PORT: "5003"
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Job 1 – Build & Push Docker image to DockerHub
+  # ─────────────────────────────────────────────
+  build-and-push:
+    runs-on: ubuntu-latest
+    environment: order-service
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/online-bookstore-order-service
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ env.SERVICE_PATH }}
+          file: ./${{ env.SERVICE_PATH }}/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  # ─────────────────────────────────────────────
+  # Job 2 – Deploy to DigitalOcean Droplet via SSH
+  # ─────────────────────────────────────────────
+  deploy:
+    runs-on: ubuntu-latest
+    environment: order-service
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/online-bookstore-order-service
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Validate required deploy secrets
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_NAME: ${{ secrets.DEPLOY_NAME }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          [ -n "$DEPLOY_HOST" ] || { echo "Missing secret: DEPLOY_HOST"; exit 1; }
+          [ -n "$DEPLOY_NAME" ] || { echo "Missing secret: DEPLOY_NAME"; exit 1; }
+          [ -n "$DEPLOY_SSH_KEY" ] || { echo "Missing secret: DEPLOY_SSH_KEY"; exit 1; }
+          [ -n "$DOCKERHUB_USERNAME" ] || { echo "Missing secret: DOCKERHUB_USERNAME"; exit 1; }
+          [ -n "$DOCKERHUB_TOKEN" ] || { echo "Missing secret: DOCKERHUB_TOKEN"; exit 1; }
+
+      - name: Deploy on DigitalOcean Droplet
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT != '' && secrets.DEPLOY_PORT || '22' }}
+          username: ${{ secrets.DEPLOY_NAME }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }}
+          timeout: 60s
+          command_timeout: 20m
+          debug: true
+          script_stop: true
+          script: |
+            set -u
+
+            echo "Connected to $(hostname) as $(whoami)"
+            id || true
+
+            if command -v docker > /dev/null 2>&1; then
+              docker --version || true
+            fi
+
+            if command -v systemctl > /dev/null 2>&1; then
+              sudo -n systemctl start docker > /dev/null 2>&1 || true
+            fi
+
+            DOCKER_MODE=""
+            if command -v docker > /dev/null 2>&1 && docker info > /dev/null 2>&1; then
+              DOCKER_MODE="docker"
+            elif command -v sudo > /dev/null 2>&1 && sudo -n docker info > /dev/null 2>&1; then
+              DOCKER_MODE="sudo"
+            fi
+
+            run_docker() {
+              if [ "$DOCKER_MODE" = "docker" ]; then
+                docker "$@"
+              elif [ "$DOCKER_MODE" = "sudo" ]; then
+                sudo -n docker "$@"
+              else
+                echo "Docker is not installed or current user cannot access Docker daemon"
+                if command -v systemctl > /dev/null 2>&1; then
+                  sudo -n systemctl status docker --no-pager || systemctl status docker --no-pager || true
+                fi
+                exit 1
+              fi
+            }
+
+            echo "Using Docker mode: $DOCKER_MODE"
+
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | run_docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin || {
+              echo "Docker login failed"
+              exit 1
+            }
+            run_docker pull ${{ env.IMAGE_NAME }}:latest || {
+              echo "Docker pull failed for image: ${{ env.IMAGE_NAME }}:latest"
+              exit 1
+            }
+
+            TARGET_CONTAINER="${{ env.CONTAINER_NAME }}"
+            EXISTING_ID="$(run_docker ps -aq --filter "name=^/${TARGET_CONTAINER}$" || true)"
+            if [ -n "$EXISTING_ID" ]; then
+              run_docker rm -f "$TARGET_CONTAINER" || true
+            else
+              echo "Container $TARGET_CONTAINER not found. Skipping remove."
+            fi
+
+            ENV_FILE="/opt/online-bookstore/${{ env.SERVICE_PATH }}.env"
+            ENV_FILE_ARG=""
+            if [ -f "$ENV_FILE" ]; then
+              ENV_FILE_ARG="--env-file $ENV_FILE"
+            else
+              echo "Missing required env file: $ENV_FILE"
+              echo "Create /opt/online-bookstore/order-service.env on your DigitalOcean Droplet with:"
+              echo "  MONGO_URI=<your_mongo_uri>"
+              echo "  JWT_SECRET=<your_jwt_secret>"
+              echo "  JWT_EXPIRE=7d"
+              echo "  PORT=5003"
+              echo "  CLIENT_ORIGIN=<your_frontend_url>"
+              exit 1
+            fi
+
+            run_docker run -d \
+              --name ${{ env.CONTAINER_NAME }} \
+              --restart unless-stopped \
+              -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
+              $ENV_FILE_ARG \
+              ${{ env.IMAGE_NAME }}:latest || {
+                echo "Container start failed for: ${{ env.CONTAINER_NAME }}"
+                run_docker ps -a --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
+                exit 1
+              }
+
+            run_docker ps --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
