@@ -1,0 +1,91 @@
+openapi: 3.0.3
+info:
+  title: Book Service API
+  version: 1.0.0
+  description: API contract for book catalog management.
+servers:
+  - url: http://164.92.92.45:5002
+    description: Book Service
+paths:
+  /api/books:
+    get:
+      summary: Get all books
+      responses:
+        '200':
+          description: List of books
+    post:
+      summary: Add a new book
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '201':
+          description: Book created
+  /api/books/{id}:
+    get:
+      summary: Get book by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Book details
+        '404':
+          description: Book not found
+    put:
+      summary: Update book by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '200':
+          description: Book updated
+        '404':
+          description: Book not found
+    delete:
+      summary: Delete book by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Book deleted
+        '404':
+          description: Book not found
+components:
+  schemas:
+    BookInput:
+      type: object
+      required:
+        - title
+        - author
+        - price
+      properties:
+        title:
+          type: string
+        author:
+          type: string
+        price:
+          type: number
+        description:
+          type: string
+        stock:
+          type: integer
