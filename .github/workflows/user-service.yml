@@ -21,6 +21,7 @@ env:
   SERVICE_PATH: user-service
   CONTAINER_NAME: online-bookstore-user-service
   SERVICE_PORT: "5001"
+  SERVICE_HEALTH_PATH: "/health"
 
 jobs:
   build-and-push:
@@ -66,6 +67,12 @@ jobs:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          MONGO_URI: ${{ secrets.MONGO_URI != '' && secrets.MONGO_URI || vars.MONGO_URI }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET || vars.JWT_SECRET }}
+          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY || vars.INTERNAL_API_KEY }}
+          ORDER_SERVICE_URL: ${{ vars.ORDER_SERVICE_URL }}
+          PAYMENT_SERVICE_URL: ${{ vars.PAYMENT_SERVICE_URL }}
         run: |
           set -euo pipefail
           [ -n "$DEPLOY_HOST" ] || { echo "Missing secret: DEPLOY_HOST"; exit 1; }
@@ -73,9 +80,25 @@ jobs:
           [ -n "$DEPLOY_SSH_KEY" ] || { echo "Missing secret: DEPLOY_SSH_KEY"; exit 1; }
           [ -n "$DOCKERHUB_USERNAME" ] || { echo "Missing secret: DOCKERHUB_USERNAME"; exit 1; }
           [ -n "$DOCKERHUB_TOKEN" ] || { echo "Missing secret: DOCKERHUB_TOKEN"; exit 1; }
+          [ -n "$MONGO_URI" ] || { echo "Missing secret: MONGO_URI"; exit 1; }
+          [ -n "$JWT_SECRET" ] || { echo "Missing JWT_SECRET (set it in secrets or vars)"; exit 1; }
+          [ -n "$CLIENT_ORIGIN" ] || { echo "Missing variable: CLIENT_ORIGIN"; exit 1; }
+          [ -n "$INTERNAL_API_KEY" ] || { echo "Missing INTERNAL_API_KEY (set it in secrets or vars)"; exit 1; }
+          [ -n "$ORDER_SERVICE_URL" ] || { echo "Missing variable: ORDER_SERVICE_URL"; exit 1; }
+          [ -n "$PAYMENT_SERVICE_URL" ] || { echo "Missing variable: PAYMENT_SERVICE_URL"; exit 1; }
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI != '' && secrets.MONGO_URI || vars.MONGO_URI }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET || vars.JWT_SECRET }}
+          JWT_EXPIRE: ${{ vars.JWT_EXPIRE }}
+          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY || vars.INTERNAL_API_KEY }}
+          ORDER_SERVICE_URL: ${{ vars.ORDER_SERVICE_URL }}
+          PAYMENT_SERVICE_URL: ${{ vars.PAYMENT_SERVICE_URL }}
+          NODE_ENV: ${{ vars.NODE_ENV }}
+          ENABLE_BOOTSTRAP_USERS: ${{ vars.ENABLE_BOOTSTRAP_USERS }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           port: ${{ secrets.DEPLOY_PORT != '' && secrets.DEPLOY_PORT || '22' }}
@@ -86,6 +109,7 @@ jobs:
           command_timeout: 20m
           debug: true
           script_stop: true
+          envs: MONGO_URI,JWT_SECRET,JWT_EXPIRE,CLIENT_ORIGIN,INTERNAL_API_KEY,ORDER_SERVICE_URL,PAYMENT_SERVICE_URL,NODE_ENV,ENABLE_BOOTSTRAP_USERS
           script: |
             set -u
 
@@ -144,17 +168,27 @@ jobs:
             ENV_FILE_ARG=""
             if [ -f "$ENV_FILE" ]; then
               ENV_FILE_ARG="--env-file $ENV_FILE"
-            else
-              echo "Missing required env file: $ENV_FILE"
-              echo "Create the file with required variables (MONGO_URI, JWT_SECRET, etc.) before deployment."
-              exit 1
             fi
+
+            CONTAINER_NODE_ENV="${NODE_ENV:-production}"
+            CONTAINER_JWT_EXPIRE="${JWT_EXPIRE:-7d}"
+            CONTAINER_ENABLE_BOOTSTRAP_USERS="${ENABLE_BOOTSTRAP_USERS:-false}"
 
             run_docker run -d \
               --name ${{ env.CONTAINER_NAME }} \
               --restart unless-stopped \
               -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
               $ENV_FILE_ARG \
+              --env PORT=${{ env.SERVICE_PORT }} \
+              --env NODE_ENV="$CONTAINER_NODE_ENV" \
+              --env MONGO_URI="$MONGO_URI" \
+              --env JWT_SECRET="$JWT_SECRET" \
+              --env JWT_EXPIRE="$CONTAINER_JWT_EXPIRE" \
+              --env CLIENT_ORIGIN="$CLIENT_ORIGIN" \
+              --env INTERNAL_API_KEY="$INTERNAL_API_KEY" \
+              --env ORDER_SERVICE_URL="$ORDER_SERVICE_URL" \
+              --env PAYMENT_SERVICE_URL="$PAYMENT_SERVICE_URL" \
+              --env ENABLE_BOOTSTRAP_USERS="$CONTAINER_ENABLE_BOOTSTRAP_USERS" \
               ${{ env.IMAGE_NAME }}:latest || {
                 echo "Container start failed for: ${{ env.CONTAINER_NAME }}"
                 run_docker ps -a --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
@@ -162,3 +196,29 @@ jobs:
               }
 
             run_docker ps --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
+
+            HEALTH_URL="http://127.0.0.1:${{ env.SERVICE_PORT }}${{ env.SERVICE_HEALTH_PATH }}"
+            ATTEMPTS=15
+            SLEEP_SECS=3
+            i=1
+
+            while [ "$i" -le "$ATTEMPTS" ]; do
+              if command -v curl >/dev/null 2>&1 && curl -fsS "$HEALTH_URL" >/dev/null 2>&1; then
+                echo "Health check passed at $HEALTH_URL"
+                exit 0
+              fi
+
+              if command -v wget >/dev/null 2>&1 && wget -qO- "$HEALTH_URL" >/dev/null 2>&1; then
+                echo "Health check passed at $HEALTH_URL"
+                exit 0
+              fi
+
+              echo "Health check attempt ${i}/${ATTEMPTS} failed. Waiting ${SLEEP_SECS}s..."
+              sleep "$SLEEP_SECS"
+              i=$((i + 1))
+            done
+
+            echo "Health check failed at $HEALTH_URL"
+            run_docker ps -a --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
+            run_docker logs --tail 150 ${{ env.CONTAINER_NAME }} || true
+            exit 1
