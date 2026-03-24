@@ -21,7 +21,6 @@ env:
   SERVICE_PATH: order-service
   CONTAINER_NAME: online-bookstore-order-service
   SERVICE_PORT: "5003"
-  SERVICE_HEALTH_PATH: "/health"
 
 jobs:
   # ─────────────────────────────────────────────
@@ -69,51 +68,30 @@ jobs:
       - name: Validate required deploy secrets
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USERNAME: ${{ secrets.DEPLOY_USERNAME }}
+          DEPLOY_NAME: ${{ secrets.DEPLOY_NAME }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          MONGO_URI: ${{ secrets.MONGO_URI != '' && secrets.MONGO_URI || vars.MONGO_URI }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET || vars.JWT_SECRET }}
-          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
-          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY || vars.INTERNAL_API_KEY }}
-          BOOK_SERVICE_URL: ${{ secrets.BOOK_SERVICE_URL != '' && secrets.BOOK_SERVICE_URL || vars.BOOK_SERVICE_URL }}
-          USER_SERVICE_URL: ${{ secrets.USER_SERVICE_URL != '' && secrets.USER_SERVICE_URL || vars.USER_SERVICE_URL }}
         run: |
           set -euo pipefail
           [ -n "$DEPLOY_HOST" ] || { echo "Missing secret: DEPLOY_HOST"; exit 1; }
-          [ -n "$DEPLOY_USERNAME" ] || { echo "Missing secret: DEPLOY_USERNAME"; exit 1; }
+          [ -n "$DEPLOY_NAME" ] || { echo "Missing secret: DEPLOY_NAME"; exit 1; }
           [ -n "$DEPLOY_SSH_KEY" ] || { echo "Missing secret: DEPLOY_SSH_KEY"; exit 1; }
           [ -n "$DOCKERHUB_USERNAME" ] || { echo "Missing secret: DOCKERHUB_USERNAME"; exit 1; }
           [ -n "$DOCKERHUB_TOKEN" ] || { echo "Missing secret: DOCKERHUB_TOKEN"; exit 1; }
-          [ -n "$MONGO_URI" ] || { echo "Missing MONGO_URI (set it in secrets or vars)"; exit 1; }
-          [ -n "$JWT_SECRET" ] || { echo "Missing JWT_SECRET (set it in secrets or vars)"; exit 1; }
-          [ -n "$CLIENT_ORIGIN" ] || { echo "Missing variable: CLIENT_ORIGIN"; exit 1; }
-          [ -n "$INTERNAL_API_KEY" ] || { echo "Missing INTERNAL_API_KEY (set it in secrets or vars)"; exit 1; }
-          [ -n "$BOOK_SERVICE_URL" ] || { echo "Missing BOOK_SERVICE_URL (set it in secrets or vars)"; exit 1; }
-          [ -n "$USER_SERVICE_URL" ] || { echo "Missing USER_SERVICE_URL (set it in secrets or vars)"; exit 1; }
 
       - name: Deploy on DigitalOcean Droplet
         uses: appleboy/ssh-action@v1.2.0
-        env:
-          MONGO_URI: ${{ secrets.MONGO_URI != '' && secrets.MONGO_URI || vars.MONGO_URI }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET || vars.JWT_SECRET }}
-          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
-          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY || vars.INTERNAL_API_KEY }}
-          BOOK_SERVICE_URL: ${{ secrets.BOOK_SERVICE_URL != '' && secrets.BOOK_SERVICE_URL || vars.BOOK_SERVICE_URL }}
-          USER_SERVICE_URL: ${{ secrets.USER_SERVICE_URL != '' && secrets.USER_SERVICE_URL || vars.USER_SERVICE_URL }}
-          NODE_ENV: ${{ vars.NODE_ENV }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           port: ${{ secrets.DEPLOY_PORT != '' && secrets.DEPLOY_PORT || '22' }}
-          username: ${{ secrets.DEPLOY_USERNAME }}
+          username: ${{ secrets.DEPLOY_NAME }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }}
           timeout: 60s
           command_timeout: 20m
           debug: true
           script_stop: true
-          envs: MONGO_URI,JWT_SECRET,CLIENT_ORIGIN,INTERNAL_API_KEY,BOOK_SERVICE_URL,USER_SERVICE_URL,NODE_ENV
           script: |
             set -u
 
@@ -172,23 +150,22 @@ jobs:
             ENV_FILE_ARG=""
             if [ -f "$ENV_FILE" ]; then
               ENV_FILE_ARG="--env-file $ENV_FILE"
+            else
+              echo "Missing required env file: $ENV_FILE"
+              echo "Create /opt/online-bookstore/order-service.env on your DigitalOcean Droplet with:"
+              echo "  MONGO_URI=<your_mongo_uri>"
+              echo "  JWT_SECRET=<your_jwt_secret>"
+              echo "  JWT_EXPIRE=7d"
+              echo "  PORT=5003"
+              echo "  CLIENT_ORIGIN=<your_frontend_url>"
+              exit 1
             fi
-
-            CONTAINER_NODE_ENV="${NODE_ENV:-production}"
 
             run_docker run -d \
               --name ${{ env.CONTAINER_NAME }} \
               --restart unless-stopped \
               -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
               $ENV_FILE_ARG \
-              --env PORT=${{ env.SERVICE_PORT }} \
-              --env NODE_ENV="$CONTAINER_NODE_ENV" \
-              --env MONGO_URI="$MONGO_URI" \
-              --env JWT_SECRET="$JWT_SECRET" \
-              --env CLIENT_ORIGIN="$CLIENT_ORIGIN" \
-              --env INTERNAL_API_KEY="$INTERNAL_API_KEY" \
-              --env BOOK_SERVICE_URL="$BOOK_SERVICE_URL" \
-              --env USER_SERVICE_URL="$USER_SERVICE_URL" \
               ${{ env.IMAGE_NAME }}:latest || {
                 echo "Container start failed for: ${{ env.CONTAINER_NAME }}"
                 run_docker ps -a --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
@@ -196,29 +173,3 @@ jobs:
               }
 
             run_docker ps --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
-
-            HEALTH_URL="http://127.0.0.1:${{ env.SERVICE_PORT }}${{ env.SERVICE_HEALTH_PATH }}"
-            ATTEMPTS=15
-            SLEEP_SECS=3
-            i=1
-
-            while [ "$i" -le "$ATTEMPTS" ]; do
-              if command -v curl >/dev/null 2>&1 && curl -fsS "$HEALTH_URL" >/dev/null 2>&1; then
-                echo "Health check passed at $HEALTH_URL"
-                exit 0
-              fi
-
-              if command -v wget >/dev/null 2>&1 && wget -qO- "$HEALTH_URL" >/dev/null 2>&1; then
-                echo "Health check passed at $HEALTH_URL"
-                exit 0
-              fi
-
-              echo "Health check attempt ${i}/${ATTEMPTS} failed. Waiting ${SLEEP_SECS}s..."
-              sleep "$SLEEP_SECS"
-              i=$((i + 1))
-            done
-
-            echo "Health check failed at $HEALTH_URL"
-            run_docker ps -a --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
-            run_docker logs --tail 150 ${{ env.CONTAINER_NAME }} || true
-            exit 1
