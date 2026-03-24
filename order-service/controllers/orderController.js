@@ -5,7 +5,7 @@ const Order = require('../models/Order');
 const BOOK_SERVICE_URL = process.env.BOOK_SERVICE_URL || 'http://localhost:5002';
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:5001';
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
-const UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS) || 5000;
+const UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS) || 15000;
 
 const internalHeaders = () => ({
   'x-internal-api-key': INTERNAL_API_KEY,
