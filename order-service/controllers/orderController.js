@@ -5,6 +5,7 @@ const Order = require('../models/Order');
 const BOOK_SERVICE_URL = process.env.BOOK_SERVICE_URL || 'http://localhost:5002';
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:5001';
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
+const UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS) || 5000;
 
 const internalHeaders = () => ({
   'x-internal-api-key': INTERNAL_API_KEY,
@@ -37,7 +38,10 @@ const createOrder = async (req, res, next) => {
     try {
       const userResponse = await axios.get(
         `${USER_SERVICE_URL}/internal/users/${req.user.id}`,
-        { headers: internalHeaders() }
+        {
+          headers: internalHeaders(),
+          timeout: UPSTREAM_TIMEOUT_MS,
+        }
       );
       if (userResponse.data.success) {
         userName = userResponse.data.user.name;
@@ -68,7 +72,10 @@ const createOrder = async (req, res, next) => {
       try {
         const bookResponse = await axios.get(
           `${BOOK_SERVICE_URL}/internal/books/${item.bookId}`,
-          { headers: internalHeaders() }
+          {
+            headers: internalHeaders(),
+            timeout: UPSTREAM_TIMEOUT_MS,
+          }
         );
 
         if (bookResponse.data.success) {
@@ -238,7 +245,10 @@ const approveOrder = async (req, res, next) => {
         await axios.put(
           `${BOOK_SERVICE_URL}/internal/books/${item.bookId}/decrement-stock`,
           { quantity: item.quantity },
-          { headers: internalHeaders() }
+          {
+            headers: internalHeaders(),
+            timeout: UPSTREAM_TIMEOUT_MS,
+          }
         );
       } catch (stockErr) {
         const msg = stockErr.response?.data?.message || stockErr.message;
