@@ -147,13 +147,15 @@ const ManageBooks = () => {
       </div>
 
       {feedback.error && (
-        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-          {feedback.error}
+        <div className="flex items-center gap-3 bg-red-50 border-2 border-red-500 text-red-900 px-6 py-4 rounded-lg mb-6 shadow-lg animate-pulse">
+          <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" /></svg>
+          <span className="font-bold text-base">{feedback.error}</span>
         </div>
       )}
       {feedback.success && (
-        <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {feedback.success}
+        <div className="flex items-center gap-3 bg-green-50 border-2 border-green-500 text-green-900 px-6 py-4 rounded-lg mb-6 shadow-lg animate-pulse">
+          <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+          <span className="font-bold text-base">{feedback.success}</span>
         </div>
       )}
 

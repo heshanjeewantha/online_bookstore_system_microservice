@@ -394,7 +394,7 @@ const updateOrderStatus = async (req, res, next) => {
 const checkBookInOrders = async (req, res, next) => {
   try {
     const { bookId } = req.params;
-    const activeStatuses = ['pending_approval', 'approved', 'shipped'];
+    const activeStatuses = ['pending_approval', 'approved', 'paid', 'shipped'];
 
     const count = await Order.countDocuments({
       'items.bookId': bookId,
@@ -452,7 +452,7 @@ const getBookSales = async (req, res, next) => {
 const checkActiveOrdersByUser = async (req, res, next) => {
   try {
     const { userId } = req.params;
-    const activeStatuses = ['pending_approval', 'approved', 'shipped'];
+    const activeStatuses = ['pending_approval', 'approved', 'paid', 'shipped'];
 
     const count = await Order.countDocuments({
       userId,
