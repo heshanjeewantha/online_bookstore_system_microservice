@@ -10,12 +10,8 @@ const {
   cancelOrder,
   updateShipmentStatus,
   updateOrderStatus,
-  checkBookInOrders,
-  getBookSales,
-  checkActiveOrdersByUser,
 } = require('../controllers/orderController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
-const { internalOnly } = require('../middleware/internalMiddleware');
 
 const router = express.Router();
 
@@ -53,8 +49,6 @@ router.put('/:id/shipment', protect, adminOnly, updateShipmentStatus);
 router.put('/:id/status', protect, adminOnly, updateOrderStatus);
 
 // ── Internal routes (service-to-service only) ─────────────────────────────────
-router.get('/internal/orders/book-sales',           internalOnly, getBookSales);
-router.get('/internal/orders/check-book/:bookId',   internalOnly, checkBookInOrders);
-router.get('/internal/orders/check-user/:userId',   internalOnly, checkActiveOrdersByUser);
+// Moved to internalRoutes.js
 
 module.exports = router;

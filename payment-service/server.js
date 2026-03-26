@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const paymentRoutes = require('./routes/paymentRoutes');
+const internalRoutes = require('./routes/internalRoutes');
 
 connectDB();
 
@@ -21,6 +22,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/payments', paymentRoutes);
+app.use('/internal/payments', internalRoutes);
 
 app.use((req, res) => {
   return res.status(404).json({ message: `Route ${req.originalUrl} not found` });
