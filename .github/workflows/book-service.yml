@@ -52,14 +52,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Verify Docker Hub push permission
-        run: |
-          set -euo pipefail
-          echo "Logged in as ${{ secrets.DOCKERHUB_USERNAME }}"
-          echo "Target image: ${{ env.IMAGE_NAME }}"
-          echo "Push permission check: attempting to query Docker Hub for namespace..."
-          docker buildx imagetools inspect "${{ env.IMAGE_NAME }}:latest" >/dev/null 2>&1 || echo "Image not yet present (expected for first push)"
-
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
