@@ -19,9 +19,8 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   SERVICE_PATH: book-service
-  CONTAINER_NAME: book-service
-  HOST_PORT: "5002"
-  CONTAINER_PORT: "3000"
+  CONTAINER_NAME: online-bookstore-book-service
+  SERVICE_PORT: "5002"
   SERVICE_HEALTH_PATH: "/health"
 
 jobs:
@@ -40,7 +39,7 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: sachith12
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push image
@@ -78,6 +77,7 @@ jobs:
           [ -n "$DEPLOY_HOST" ] || { echo "Missing secret: DEPLOY_HOST"; exit 1; }
           [ -n "$DEPLOY_USERNAME" ] || { echo "Missing secret: DEPLOY_USERNAME"; exit 1; }
           [ -n "$DEPLOY_SSH_KEY" ] || { echo "Missing secret: DEPLOY_SSH_KEY"; exit 1; }
+          [ -n "$DOCKERHUB_USERNAME" ] || { echo "Missing secret: DOCKERHUB_USERNAME"; exit 1; }
           [ -n "$DOCKERHUB_TOKEN" ] || { echo "Missing secret: DOCKERHUB_TOKEN"; exit 1; }
           [ -n "$MONGO_URI" ] || { echo "Missing MONGO_URI (set it in secrets or vars)"; exit 1; }
           [ -n "$JWT_SECRET" ] || { echo "Missing JWT_SECRET (set it in secrets or vars)"; exit 1; }
@@ -142,7 +142,7 @@ jobs:
 
             echo "Using Docker mode: $DOCKER_MODE"
 
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | run_docker login -u "sachith12" --password-stdin || {
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | run_docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin || {
               echo "Docker login failed"
               exit 1
             }
@@ -169,9 +169,9 @@ jobs:
             run_docker run -d \
               --name ${{ env.CONTAINER_NAME }} \
               --restart unless-stopped \
-              -p ${{ env.HOST_PORT }}:${{ env.CONTAINER_PORT }} \
+              -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
               $ENV_FILE_ARG \
-              --env PORT=${{ env.CONTAINER_PORT }} \
+              --env PORT=${{ env.SERVICE_PORT }} \
               --env NODE_ENV="$CONTAINER_NODE_ENV" \
               --env MONGO_URI="$MONGO_URI" \
               --env JWT_SECRET="$JWT_SECRET" \
@@ -187,7 +187,7 @@ jobs:
 
             run_docker ps --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
 
-            HEALTH_URL="http://127.0.0.1:${{ env.HOST_PORT }}${{ env.SERVICE_HEALTH_PATH }}"
+            HEALTH_URL="http://127.0.0.1:${{ env.SERVICE_PORT }}${{ env.SERVICE_HEALTH_PATH }}"
             ATTEMPTS=15
             SLEEP_SECS=3
             i=1
