@@ -11,6 +11,6 @@ RUN rm -f .env.example
 
 ENV NODE_ENV=production
 
-EXPOSE 5002
+EXPOSE 3000
 
 CMD ["node", "server.js"]
