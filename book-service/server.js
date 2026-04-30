@@ -24,8 +24,7 @@ app.use('/internal/books', internalRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
+const PORT = process.env.PORT || 5002;
 
 const startServer = async () => {
   try {
@@ -35,8 +34,8 @@ const startServer = async () => {
       await seedDefaultBooks();
     }
 
-    app.listen(PORT, HOST, () => {
-      console.log(`Book service running on http://${HOST === '0.0.0.0' ? '0.0.0.0' : HOST}:${PORT}`);
+    app.listen(PORT, () => {
+      console.log(`Book service running on http://localhost:${PORT}`);
     });
   } catch (error) {
     console.error(`Failed to start book service: ${error.message}`);
