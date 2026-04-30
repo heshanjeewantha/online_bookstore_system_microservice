@@ -16,7 +16,7 @@ app.use(cors({
 app.use(express.json());
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'book-service', timestamp: new Date().toISOString() });
+  res.status(200).send('OK');
 });
 
 app.use('/books', bookRoutes);
@@ -25,7 +25,6 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
 
 const startServer = async () => {
   try {
@@ -35,8 +34,8 @@ const startServer = async () => {
       await seedDefaultBooks();
     }
 
-    app.listen(PORT, HOST, () => {
-      console.log(`Book service running on http://${HOST === '0.0.0.0' ? '0.0.0.0' : HOST}:${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Book service running on http://0.0.0.0:${PORT}`);
     });
   } catch (error) {
     console.error(`Failed to start book service: ${error.message}`);
