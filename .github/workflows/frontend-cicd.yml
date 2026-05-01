@@ -168,15 +168,28 @@ jobs:
         run: |
           echo "Checking if application is accessible..."
           for i in {1..30}; do
-            if curl -f -m 5 http://${{ secrets.SERVER_HOST }}/ > /dev/null 2>&1; then
-              echo "✓ Application is running!"
+            if curl -fsSL -m 10 "http://${{ secrets.SERVER_HOST }}/" > /dev/null 2>&1; then
+              echo "✓ Application is running (HTTP/redirect OK)!"
               exit 0
             fi
+
+            if curl -fsS -k -m 10 "https://${{ secrets.SERVER_HOST }}/" > /dev/null 2>&1; then
+              echo "✓ Application is running (HTTPS)!"
+              exit 0
+            fi
+
             echo "Attempt $i/30: Waiting for application to be ready..."
             sleep 2
           done
+
           echo "✗ Application did not become ready in time"
-          echo "Checking container status on server..."
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "docker logs bookstore-frontend 2>&1 | tail -20" || true
+          echo "Debug: Testing HTTP endpoint..."
+          curl -v --max-time 10 "http://${{ secrets.SERVER_HOST }}/" || true
+          echo ""
+          echo "Debug: Testing HTTPS endpoint..."
+          curl -vk --max-time 10 "https://${{ secrets.SERVER_HOST }}/" || true
+          echo ""
+          echo "Checking container logs on server..."
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "docker logs bookstore-frontend 2>&1 | tail -50" || true
           exit 1
       # Slack notifications removed (no SLACK_WEBHOOK_URL configured)
