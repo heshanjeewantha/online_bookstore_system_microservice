@@ -35,9 +35,16 @@ services:
       DEFAULT_USER_NAME: Kasun Perera
       DEFAULT_USER_EMAIL: kasun@example.com
       DEFAULT_USER_PASSWORD: Test@123
+      # ── Inter-service: use Docker service names ───────────────────────────
+      ORDER_SERVICE_URL: "http://order-service:5003"
+      PAYMENT_SERVICE_URL: "http://payment-service:5004"
     depends_on:
       mongo:
         condition: service_healthy
+      order-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
 
   book-service:
     build:
@@ -55,9 +62,13 @@ services:
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
       ENABLE_BOOTSTRAP_BOOKS: "true"
+      # ── Inter-service: use Docker service names ───────────────────────────
+      ORDER_SERVICE_URL: "http://order-service:5003"
     depends_on:
       mongo:
         condition: service_healthy
+      order-service:
+        condition: service_started
 
   order-service:
     build:
@@ -71,11 +82,12 @@ services:
       PORT: 5003
       MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
       INTERNAL_API_KEY: "super-secret-internal-key"
-      USER_SERVICE_URL: "http://user-service:5001"
-      BOOK_SERVICE_URL: "http://book-service:5002"
       JWT_SECRET: supersecretjwtkey123456789
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
+      # ── Inter-service: use Docker service names ───────────────────────────
+      USER_SERVICE_URL: "http://user-service:5001"
+      BOOK_SERVICE_URL: "http://book-service:5002"
     depends_on:
       mongo:
         condition: service_healthy
@@ -92,13 +104,16 @@ services:
       PORT: 5004
       MONGO_URI: mongodb+srv://heshanjeewantha_db_user:mYAyuUYLd9Gje2sQ@bookdatabase.vwnnfev.mongodb.net/?appName=bookdatabase
       INTERNAL_API_KEY: "super-secret-internal-key"
-      ORDER_SERVICE_URL: "http://order-service:5003"
       JWT_SECRET: supersecretjwtkey123456789
       JWT_EXPIRE: 7d
       CLIENT_ORIGIN: http://localhost:8080
+      # ── Inter-service: use Docker service names ───────────────────────────
+      ORDER_SERVICE_URL: "http://order-service:5003"
     depends_on:
       mongo:
         condition: service_healthy
+      order-service:
+        condition: service_started
 
   nginx:
     build:

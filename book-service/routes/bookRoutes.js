@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const {
   getBooks,
+  getBestSellers,
   getBookById,
   createBook,
   updateBook,
@@ -30,6 +31,9 @@ const updateBookValidation = [
   body('stock').optional().isInt({ min: 0 }).withMessage('Stock must be 0 or greater'),
   body('image').optional().trim().notEmpty().withMessage('Image URL cannot be empty').isURL().withMessage('Image must be a valid URL'),
 ];
+
+// IMPORTANT: specific routes must come before parameterized /:id routes
+router.get('/best-sellers', getBestSellers);
 
 router.get('/', getBooks);
 router.get('/:id', getBookById);

@@ -48,4 +48,7 @@ router.put('/:id/cancel', protect, adminOnly, cancelOrder);
 router.put('/:id/shipment', protect, adminOnly, updateShipmentStatus);
 router.put('/:id/status', protect, adminOnly, updateOrderStatus);
 
+// ── Internal routes (service-to-service only) ─────────────────────────────────
+// Moved to internalRoutes.js
+
 module.exports = router;

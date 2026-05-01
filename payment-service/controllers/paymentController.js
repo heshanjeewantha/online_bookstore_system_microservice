@@ -140,8 +140,34 @@ const getAllPayments = async (req, res) => {
   }
 };
 
+
+// @desc    [INTERNAL] Check if a user has any processing/pending payments
+//          Called by User Service before deleting an account — Safe Account Deletion
+// @route   GET /internal/payments/check-user/:userId
+// @access  Internal only (x-internal-api-key)
+const checkProcessingPaymentsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const count = await Payment.countDocuments({
+      userId,
+      paymentStatus: 'processing',
+    });
+
+    return res.status(200).json({
+      success: true,
+      hasProcessingPayments: count > 0,
+      count,
+    });
+  } catch (error) {
+    console.error('Check Processing Payments Error:', error.message);
+    return res.status(500).json({ message: 'Server error checking payments' });
+  }
+};
+
 module.exports = {
   processPayment,
   getPaymentsByUser,
   getAllPayments,
+  checkProcessingPaymentsByUser,
 };

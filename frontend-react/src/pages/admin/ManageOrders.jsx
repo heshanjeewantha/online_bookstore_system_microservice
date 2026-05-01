@@ -29,7 +29,11 @@ const ManageOrders = () => {
             await approveOrder(id);
             await fetchOrders();
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            const baseMessage = err.response?.data?.message || err.message || 'Failed to approve order';
+            const details = Array.isArray(err.response?.data?.errors)
+                ? err.response.data.errors.join('\n')
+                : '';
+            alert(details ? `${baseMessage}\n\n${details}` : baseMessage);
         } finally {
             setActionLoading(null);
         }

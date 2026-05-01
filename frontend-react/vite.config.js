@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 5173,
       proxy: {
+        // Dev-only proxy — mirrors the nginx routing for local npm run dev
         '/api/users': {
           target: 'http://164.92.92.45:5001',
           changeOrigin: true,
@@ -26,7 +27,7 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/api\/orders/, '/orders'),
         },
         '/api/payments': {
-          target: 'http://129.212.233.148:3003',
+          target: 'http://129.212.233.148:5004',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/payments/, '/payments'),
         },
