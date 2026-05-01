@@ -52,7 +52,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-            # Optional: Add branch-based tagging for non-PR builds
+            # Optional: Add branch-based tagging
   deploy:
     runs-on: ubuntu-latest
     environment: book-service
