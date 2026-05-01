@@ -38,3 +38,4 @@ if (process.argv[2] === '--destroy') {
 } else {
   importData();
 }
+//seeder check

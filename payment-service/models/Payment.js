@@ -48,3 +48,4 @@ const paymentSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model('Payment', paymentSchema);
+// payment-service/models/Payment.js
