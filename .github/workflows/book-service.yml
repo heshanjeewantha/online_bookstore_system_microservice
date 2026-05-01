@@ -51,8 +51,6 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
-
-            # Optional: Add branch-based tagging
   deploy:
     runs-on: ubuntu-latest
     environment: book-service
@@ -69,10 +67,13 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           MONGO_URI: ${{ secrets.MONGO_URI != '' && secrets.MONGO_URI || vars.MONGO_URI }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET || vars.JWT_SECRET }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET ||
+            vars.JWT_SECRET }}
           CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
-          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY || vars.INTERNAL_API_KEY }}
-          ORDER_SERVICE_URL: ${{ secrets.ORDER_SERVICE_URL != '' && secrets.ORDER_SERVICE_URL || vars.ORDER_SERVICE_URL }}
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY
+            || vars.INTERNAL_API_KEY }}
+          ORDER_SERVICE_URL: ${{ secrets.ORDER_SERVICE_URL != '' &&
+            secrets.ORDER_SERVICE_URL || vars.ORDER_SERVICE_URL }}
         run: |
           set -euo pipefail
           [ -n "$DROPLET_IP" ] || { echo "Missing secret: DROPLET_IP"; exit 1; }
@@ -90,10 +91,13 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         env:
           MONGO_URI: ${{ secrets.MONGO_URI != '' && secrets.MONGO_URI || vars.MONGO_URI }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET || vars.JWT_SECRET }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET ||
+            vars.JWT_SECRET }}
           CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
-          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY || vars.INTERNAL_API_KEY }}
-          ORDER_SERVICE_URL: ${{ secrets.ORDER_SERVICE_URL != '' && secrets.ORDER_SERVICE_URL || vars.ORDER_SERVICE_URL }}
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY
+            || vars.INTERNAL_API_KEY }}
+          ORDER_SERVICE_URL: ${{ secrets.ORDER_SERVICE_URL != '' &&
+            secrets.ORDER_SERVICE_URL || vars.ORDER_SERVICE_URL }}
           NODE_ENV: ${{ vars.NODE_ENV }}
           ENABLE_BOOTSTRAP_BOOKS: ${{ vars.ENABLE_BOOTSTRAP_BOOKS }}
         with:
