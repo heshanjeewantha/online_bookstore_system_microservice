@@ -205,7 +205,6 @@ const ManageBooks = () => {
                 <th className="px-6 py-4">Book</th>
                 <th className="px-6 py-4">Price</th>
                 <th className="px-6 py-4">Stock</th>
-                {viewMode === 'bestSellers' && <th className="px-6 py-4">Sales</th>}
                 <th className="px-6 py-4">Category</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -238,11 +237,6 @@ const ManageBooks = () => {
                       {book.stock} in stock
                     </span>
                   </td>
-                  {viewMode === 'bestSellers' && (
-                    <td className="px-6 py-4 font-semibold text-slate-700">
-                      {Number(book.totalSales || 0).toLocaleString()}
-                    </td>
-                  )}
                   <td className="px-6 py-4">{book.category}</td>
                   <td className="px-6 py-4 text-right">
                     <button
