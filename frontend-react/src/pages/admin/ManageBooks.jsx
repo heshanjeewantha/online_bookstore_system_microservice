@@ -19,18 +19,20 @@ const ManageBooks = () => {
   const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [viewMode, setViewMode] = useState('all');
   const [form, setForm] = useState(emptyForm);
   const [feedback, setFeedback] = useState({ error: '', success: '' });
 
   useEffect(() => {
     fetchBooks();
-  }, []);
+  }, [viewMode]);
 
   const fetchBooks = async () => {
     setLoading(true);
 
     try {
-      const { data } = await getBooks();
+      const params = viewMode === 'bestSellers' ? { sort: 'bestSeller' } : {};
+      const { data } = await getBooks(params);
       setBooks(data.books);
     } catch (error) {
       setFeedback({
@@ -141,9 +143,41 @@ const ManageBooks = () => {
             Add, update, or remove books from the catalog microservice.
           </p>
         </div>
-        <button type="button" onClick={openCreateModal} className="btn-primary">
-          Add New Book
-        </button>
+        <div className="flex flex-col gap-3 sm:items-end">
+          <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+            <button
+              type="button"
+              onClick={() => setViewMode('all')}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                viewMode === 'all'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              All Books
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('bestSellers')}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                viewMode === 'bestSellers'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              Best Sellers
+            </button>
+          </div>
+          <button type="button" onClick={openCreateModal} className="btn-primary">
+            Add New Book
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-600 shadow-sm">
+        {viewMode === 'bestSellers'
+          ? 'Showing the top-selling books sorted by total sales.'
+          : 'Showing the full catalog.'}
       </div>
 
       {feedback.error && (
@@ -171,6 +205,7 @@ const ManageBooks = () => {
                 <th className="px-6 py-4">Book</th>
                 <th className="px-6 py-4">Price</th>
                 <th className="px-6 py-4">Stock</th>
+                {viewMode === 'bestSellers' && <th className="px-6 py-4">Sales</th>}
                 <th className="px-6 py-4">Category</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -203,6 +238,11 @@ const ManageBooks = () => {
                       {book.stock} in stock
                     </span>
                   </td>
+                  {viewMode === 'bestSellers' && (
+                    <td className="px-6 py-4 font-semibold text-slate-700">
+                      {Number(book.totalSales || 0).toLocaleString()}
+                    </td>
+                  )}
                   <td className="px-6 py-4">{book.category}</td>
                   <td className="px-6 py-4 text-right">
                     <button
