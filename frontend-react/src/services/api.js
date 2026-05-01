@@ -36,7 +36,7 @@ export const updateShipmentStatus= (id, data)    => orderApi.put(`/${id}/shipmen
 export const updateOrderStatus   = (id, data)    => orderApi.put(`/${id}/status`, data);
 export const getPendingPaymentCount = ()         => orderApi.get('/pending-payment-count');
 
-// ── Payment Service  (http://129.212.233.148:5004) ───────────────────────────
+// ── Payment Service  (http://157.245.137.58:5004) ───────────────────────────
 export const processPayment      = (data)        => paymentApi.post('/', data);
 export const getPaymentsByUser   = (userId)      => paymentApi.get(`/${userId}`);
 export const getAllPayments       = ()            => paymentApi.get('/');
