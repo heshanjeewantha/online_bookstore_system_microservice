@@ -6,14 +6,22 @@ const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const orderRoutes = require('./routes/orderRoutes');
 const internalRoutes = require('./routes/internalRoutes');
 
-// Trigger CI/CD workflow
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  process.env.CLIENT_ORIGIN,
+].filter(Boolean);
+
+
 const app = express();
 
 app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(express.json());
+
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'order-service', timestamp: new Date().toISOString() });
