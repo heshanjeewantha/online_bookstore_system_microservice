@@ -181,5 +181,4 @@ jobs:
         with:
           status: ${{ job.status }}
           text: "Frontend deployment failed!"
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
           fields: repo,message,commit,author
