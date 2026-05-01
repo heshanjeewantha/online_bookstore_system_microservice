@@ -141,13 +141,15 @@ jobs:
             "$IMAGE_NAME:$IMAGE_TAG"
 
           # Verify container is running
-          sleep 3
+          sleep 10
           if docker ps | grep -q bookstore-frontend; then
-            echo "✓ Container deployed successfully!"
+            echo "✓ Container started successfully!"
             docker ps | grep bookstore-frontend
+            echo "Container logs:"
+            docker logs bookstore-frontend || true
           else
             echo "✗ Container failed to start!"
-            docker logs bookstore-frontend
+            docker logs bookstore-frontend || true
             exit 1
           fi
 
@@ -165,7 +167,7 @@ jobs:
         run: |
           echo "Checking if application is accessible..."
           for i in {1..30}; do
-            if curl -f http://${{ secrets.SERVER_HOST }}/ > /dev/null 2>&1; then
+            if curl -f -m 5 http://${{ secrets.SERVER_HOST }}/ > /dev/null 2>&1; then
               echo "✓ Application is running!"
               exit 0
             fi
@@ -173,5 +175,7 @@ jobs:
             sleep 2
           done
           echo "✗ Application did not become ready in time"
+          echo "Checking container status on server..."
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "docker logs bookstore-frontend 2>&1 | tail -20" || true
           exit 1
       # Slack notifications removed (no SLACK_WEBHOOK_URL configured)
