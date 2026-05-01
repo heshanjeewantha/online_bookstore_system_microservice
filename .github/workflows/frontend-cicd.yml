@@ -17,7 +17,7 @@ on:
 env:
   DOCKER_REGISTRY: docker.io
   IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/bookstore-frontend
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
 
 jobs:
   build-and-push:
