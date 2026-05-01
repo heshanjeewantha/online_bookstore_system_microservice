@@ -8,6 +8,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: payment-service
+    defaults:
+      run:
+        working-directory: payment-service
     steps:
       # Checkout code
       - name: Checkout code
@@ -29,31 +32,17 @@ jobs:
       # Check if package.json exists
       - name: Check package.json
         run: |
-          if [ -f "package.json" ]; then
-            echo "package.json found"
-            cat package.json | grep name || true
-          else
-            echo "package.json NOT found!"
-            exit 1
-          fi
+          test -f package.json
       
       # Install dependencies
       - name: Install dependencies
         run: |
-          if [ -f "package.json" ]; then
-            npm install
-          else
-            echo "Skipping npm install - no package.json"
-          fi
+          npm ci
       
       # Run tests (skip if no tests)
       - name: Run tests
         run: |
-          if [ -f "package.json" ] && grep -q '"test"' package.json; then
-            npm test
-          else
-            echo "No tests configured, skipping"
-          fi
+          npm test --if-present
       
       # Login to Docker Hub
       - name: Login to Docker Hub
