@@ -1,0 +1,171 @@
+name: Frontend CI/CD - Build & Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'frontend-react/**'
+      - '.github/workflows/frontend-cicd.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'frontend-react/**'
+
+env:
+  DOCKER_REGISTRY: docker.io
+  IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/bookstore-frontend
+  NODE_VERSION: '18'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend-react
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        env:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          DEPLOY_BRANCH: ${{ github.ref_name }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          set -e
+          echo "Starting deployment..."
+          
+          # Set environment variables
+          export DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
+          export DOCKER_HUB_PASSWORD=${{ secrets.DOCKER_HUB_PASSWORD }}
+          export IMAGE_NAME=${{ env.IMAGE_NAME }}
+          export DEPLOY_BRANCH=${{ github.ref_name }}
+          
+          # Pull latest image tag
+          if [ "$DEPLOY_BRANCH" = "main" ]; then
+            IMAGE_TAG="latest"
+          else
+            IMAGE_TAG="$DEPLOY_BRANCH"
+          fi
+          
+          # Login to Docker Hub
+          echo "Logging in to Docker Hub..."
+          echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
+          
+          # Pull the latest image
+          echo "Pulling Docker image: $IMAGE_NAME:$IMAGE_TAG"
+          docker pull "$IMAGE_NAME:$IMAGE_TAG"
+          
+          # Stop and remove old container if exists
+          echo "Stopping old container..."
+          docker stop bookstore-frontend || true
+          docker rm bookstore-frontend || true
+          
+          # Run new container
+          echo "Starting new container..."
+          docker run -d \
+            --name bookstore-frontend \
+            --restart unless-stopped \
+            -p 80:80 \
+            -p 443:443 \
+            "$IMAGE_NAME:$IMAGE_TAG"
+          
+          # Verify container is running
+          sleep 3
+          if docker ps | grep -q bookstore-frontend; then
+            echo "✓ Container deployed successfully!"
+            docker ps | grep bookstore-frontend
+          else
+            echo "✗ Container failed to start!"
+            docker logs bookstore-frontend
+            exit 1
+          fi
+          
+          # Cleanup old images
+          echo "Cleaning up old images..."
+          docker image prune -f --all --filter "until=72h"
+          
+          # Logout from Docker Hub
+          docker logout
+          
+          echo "Deployment completed!"
+          EOF
+
+      - name: Verify deployment
+        run: |
+          echo "Checking if application is accessible..."
+          for i in {1..30}; do
+            if curl -f http://${{ secrets.SERVER_HOST }}/ > /dev/null 2>&1; then
+              echo "✓ Application is running!"
+              exit 0
+            fi
+            echo "Attempt $i/30: Waiting for application to be ready..."
+            sleep 2
+          done
+          echo "✗ Application did not become ready in time"
+          exit 1
+
+      - name: Slack notification (on failure)
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Frontend deployment failed!'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author
