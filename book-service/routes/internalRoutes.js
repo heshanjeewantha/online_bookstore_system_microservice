@@ -70,4 +70,35 @@ router.put('/:id/decrement-stock', internalAuth, async (req, res) => {
   }
 });
 
+// @desc    Increment book sales (called by order-service when an order is approved)
+// @route   PUT /internal/books/:id/increment-sales
+// @access  Internal (service-to-service only)
+router.put('/:id/increment-sales', internalAuth, async (req, res) => {
+  try {
+    const { quantity } = req.body;
+
+    if (!quantity || quantity < 1) {
+      return res.status(400).json({ success: false, message: 'Quantity must be at least 1' });
+    }
+
+    const book = await Book.findById(req.params.id);
+
+    if (!book) {
+      return res.status(404).json({ success: false, message: 'Book not found' });
+    }
+
+    book.totalSales = (book.totalSales || 0) + quantity;
+    await book.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Sales incremented by ${quantity} for "${book.title}"`,
+      totalSales: book.totalSales,
+    });
+  } catch (error) {
+    console.error(`Internal increment sales error: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Failed to increment sales' });
+  }
+});
+
 module.exports = router;

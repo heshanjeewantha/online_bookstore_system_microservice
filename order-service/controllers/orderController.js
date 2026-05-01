@@ -264,6 +264,23 @@ const approveOrder = async (req, res, next) => {
       });
     }
 
+    // ── Inter-service call: Update totalSales in Book Service for each item ──
+    for (const item of order.items) {
+      try {
+        await axios.put(
+          `${BOOK_SERVICE_URL}/internal/books/${item.bookId}/increment-sales`,
+          { quantity: item.quantity },
+          {
+            headers: internalHeaders(),
+            timeout: UPSTREAM_TIMEOUT_MS,
+          }
+        );
+      } catch (salesErr) {
+        // Log warning but don't block order approval if sales update fails
+        console.warn(`[Order→Book] Failed to update sales for book ${item.bookId}: ${salesErr.message}`);
+      }
+    }
+
     order.orderStatus = 'approved';
     if (req.body.adminNote) {
       order.adminNote = req.body.adminNote;
@@ -418,8 +435,8 @@ const checkBookInOrders = async (req, res, next) => {
 const getBookSales = async (req, res, next) => {
   try {
     const pipeline = [
-      // Only count completed orders
-      { $match: { orderStatus: { $in: ['shipped', 'delivered', 'approved'] } } },
+      // Count confirmed sales: approved, paid, shipped, or delivered
+      { $match: { orderStatus: { $in: ['approved', 'paid', 'shipped', 'delivered'] } } },
       // Unwind items array so each item is a separate document
       { $unwind: '$items' },
       // Group by bookId, summing quantities
