@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/api\/users/, '/users'),
         },
         '/api/books': {
-          target: 'http://137.184.229.42:5002',
+          target: 'http://137.184.56.244:5002',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/books/, '/books'),
         },
