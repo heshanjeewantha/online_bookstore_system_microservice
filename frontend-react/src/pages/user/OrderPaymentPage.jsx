@@ -86,6 +86,23 @@ const OrderPaymentPage = () => {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+    // Prominent error/success banners
+    const renderPaymentBanner = () => (
+      <>
+        {error && (
+          <div className="flex items-center gap-3 px-6 py-4 mb-6 text-red-900 border-2 border-red-500 rounded-lg shadow-lg bg-red-50 animate-pulse">
+            <svg className="flex-shrink-0 w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" /></svg>
+            <span className="text-base font-bold">{error}</span>
+          </div>
+        )}
+        {successMessage && (
+          <div className="flex items-center gap-3 px-6 py-4 mb-6 text-green-900 border-2 border-green-500 rounded-lg shadow-lg bg-green-50 animate-pulse">
+            <svg className="flex-shrink-0 w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            <span className="text-base font-bold">{successMessage}</span>
+          </div>
+        )}
+      </>
+    );
   const [alreadyPaid, setAlreadyPaid] = useState(false);
   const [form, setForm] = useState({
     cardName: '',
@@ -167,11 +184,6 @@ const OrderPaymentPage = () => {
       setError('Please correct card details before checkout.');
       return;
     }
-
-    setProcessing(true);
-    setError('');
-    setSuccessMessage('');
-
     try {
       await processPayment({
         orderId: order._id,
@@ -193,16 +205,16 @@ const OrderPaymentPage = () => {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="w-10 h-10 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 rounded-full border-brand-600 border-t-transparent animate-spin" />
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-2xl p-8 text-center">
-        <p className="text-slate-600 font-medium">Order not found.</p>
-        <Link to="/dashboard/orders" className="btn-primary inline-block mt-5">Back to My Orders</Link>
+      <div className="max-w-3xl p-8 mx-auto text-center bg-white border border-slate-200 rounded-2xl">
+        <p className="font-medium text-slate-600">Order not found.</p>
+        <Link to="/dashboard/orders" className="inline-block mt-5 btn-primary">Back to My Orders</Link>
       </div>
     );
   }
@@ -211,46 +223,46 @@ const OrderPaymentPage = () => {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <Link to="/dashboard/orders" className="text-brand-600 hover:text-brand-700 font-bold mb-6 inline-flex items-center gap-2">
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <Link to="/dashboard/orders" className="inline-flex items-center gap-2 mb-6 font-bold text-brand-600 hover:text-brand-700">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
         </svg>
         Back to My Orders
       </Link>
 
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="bg-slate-50 border-b border-slate-200 p-5 sm:p-6">
+      <div className="overflow-hidden bg-white border shadow-sm border-slate-200 rounded-2xl">
+        <div className="p-5 border-b bg-slate-50 border-slate-200 sm:p-6">
           <h1 className="text-2xl font-bold text-slate-800">Checkout</h1>
-          <p className="text-slate-500 text-sm mt-1">Order #{order._id?.slice(-8) || order._id}</p>
+          <p className="mt-1 text-sm text-slate-500">Order #{order._id?.slice(-8) || order._id}</p>
         </div>
 
-        <div className="p-5 sm:p-6 space-y-5">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Order Status</p>
-            <p className="text-slate-800 font-semibold">
+        <div className="p-5 space-y-5 sm:p-6">
+          <div className="p-4 border rounded-xl border-slate-200 bg-slate-50">
+            <p className="mb-2 text-xs font-bold tracking-wider uppercase text-slate-500">Order Status</p>
+            <p className="font-semibold text-slate-800">
               {order.orderStatus === 'approved' ? 'Approved - Ready for payment' : `Current status: ${order.orderStatus}`}
             </p>
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Items</p>
+            <p className="mb-2 text-xs font-bold tracking-wider uppercase text-slate-500">Items</p>
             <div className="space-y-2">
               {order.items?.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center border-b border-slate-100 pb-2 last:border-0 last:pb-0">
-                  <span className="text-slate-700 text-sm">{item.title} x {item.quantity}</span>
-                  <span className="text-slate-700 font-semibold text-sm">Rs. {(item.price * item.quantity).toLocaleString()}</span>
+                <div key={idx} className="flex items-center justify-between pb-2 border-b border-slate-100 last:border-0 last:pb-0">
+                  <span className="text-sm text-slate-700">{item.title} x {item.quantity}</span>
+                  <span className="text-sm font-semibold text-slate-700">Rs. {(item.price * item.quantity).toLocaleString()}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
+          <div className="flex items-center justify-between pt-4 border-t border-slate-200">
             <span className="font-bold text-slate-700">Total Amount</span>
             <span className="text-2xl font-black text-brand-600">Rs. {order.totalPrice?.toLocaleString()}</span>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5 space-y-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Credit / Debit Card</p>
+          <div className="p-4 space-y-4 border rounded-xl border-slate-200 bg-slate-50 sm:p-5">
+            <p className="text-xs font-bold tracking-wider uppercase text-slate-500">Credit / Debit Card</p>
 
             <div>
               <label htmlFor="cardName" className="label">Cardholder Name</label>
@@ -288,7 +300,7 @@ const OrderPaymentPage = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="expiry" className="label">Expiry (MM/YY)</label>
                 <input
@@ -330,41 +342,41 @@ const OrderPaymentPage = () => {
           </div>
 
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="px-4 py-3 text-sm text-red-600 border border-red-200 rounded-xl bg-red-50">
               {error}
             </div>
           )}
 
           {successMessage && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            <div className="px-4 py-3 text-sm border rounded-xl border-emerald-200 bg-emerald-50 text-emerald-700">
               {successMessage}
             </div>
           )}
 
           {alreadyPaid && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            <div className="px-4 py-3 text-sm border rounded-xl border-emerald-200 bg-emerald-50 text-emerald-700">
               This order is already paid.
             </div>
           )}
 
           {!alreadyPaid && order.orderStatus !== 'approved' && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            <div className="px-4 py-3 text-sm border rounded-xl border-amber-200 bg-amber-50 text-amber-700">
               Payment is available only after admin approval.
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <button
               onClick={handlePayNow}
               disabled={!canPay || processing || !isFormValid}
-              className="btn-primary h-12 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-12 px-6 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {processing ? 'Processing...' : `Checkout Rs. ${order.totalPrice?.toLocaleString()}`}
             </button>
             <button
               type="button"
               onClick={() => navigate('/dashboard/orders')}
-              className="btn-secondary h-12 px-6"
+              className="h-12 px-6 btn-secondary"
             >
               Cancel
             </button>
@@ -376,3 +388,4 @@ const OrderPaymentPage = () => {
 };
 
 export default OrderPaymentPage;
+

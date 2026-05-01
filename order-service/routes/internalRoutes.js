@@ -1,6 +1,7 @@
 const express = require('express');
 const Order = require('../models/Order');
 const { internalAuth } = require('../middleware/internalAuth');
+const { checkBookInOrders, getBookSales, checkActiveOrdersByUser } = require('../controllers/orderController');
 
 const router = express.Router();
 
@@ -68,4 +69,22 @@ router.put('/:id/mark-paid', internalAuth, async (req, res) => {
   }
 });
 
+// @desc    Check if a user has active orders (called by user-service before account deletion)
+// @route   GET /internal/orders/check-user/:userId
+// @access  Internal (service-to-service only)
+router.get('/check-user/:userId', internalAuth, checkActiveOrdersByUser);
+
+// @desc    [INTERNAL] Check if a book has any active (non-cancelled) orders
+//          Called by Book Service before deleting a book — Safe Delete
+// @route   GET /internal/orders/check-book/:bookId
+// @access  Internal (service-to-service only)
+router.get('/check-book/:bookId', internalAuth, checkBookInOrders);
+
+// @desc    [INTERNAL] Get total quantity sold per book across all delivered/paid orders
+//          Called by Book Service to compute Best Sellers
+// @route   GET /internal/orders/book-sales
+// @access  Internal (service-to-service only)
+router.get('/book-sales', internalAuth, getBookSales);
+
 module.exports = router;
+

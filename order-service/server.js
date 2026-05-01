@@ -6,11 +6,13 @@ const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const orderRoutes = require('./routes/orderRoutes');
 const internalRoutes = require('./routes/internalRoutes');
 
+
 const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   process.env.CLIENT_ORIGIN,
 ].filter(Boolean);
+
 
 const app = express();
 

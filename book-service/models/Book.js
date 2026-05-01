@@ -43,6 +43,11 @@ const bookSchema = new mongoose.Schema(
       required: [true, 'Image URL is required'],
       trim: true,
     },
+    totalSales: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,

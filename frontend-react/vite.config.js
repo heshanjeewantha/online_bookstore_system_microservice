@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 5173,
       proxy: {
+        // Dev-only proxy — mirrors the nginx routing for local npm run dev
         '/api/users': {
           target: 'http://164.92.92.45:5001',
           changeOrigin: true,

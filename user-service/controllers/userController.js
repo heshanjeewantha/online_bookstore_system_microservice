@@ -1,6 +1,17 @@
 const { validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 const User = require('../models/User');
+
+// ── Inter-service config ──────────────────────────────────────────────────────
+const ORDER_SERVICE_URL   = process.env.ORDER_SERVICE_URL   || 'http://localhost:5003';
+const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:5004';
+const INTERNAL_API_KEY    = process.env.INTERNAL_API_KEY    || '';
+
+const internalHeaders = () => ({
+  'x-internal-api-key': INTERNAL_API_KEY,
+  'Content-Type': 'application/json',
+});
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -168,10 +179,83 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+// @desc    Delete a user account — SAFE DELETE via Order & Payment Service checks
+//          Admin can delete any user; a user can delete their own account.
+//          Blocked if the user has active orders OR processing payments.
+// @route   DELETE /users/:id
+// @access  Private (owner or admin)
+const deleteUser = async (req, res) => {
+  try {
+    const targetId = req.params.id;
+
+    // Only the account owner or admin can delete the account
+    if (req.user._id.toString() !== targetId && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to delete this account' });
+    }
+
+    const user = await User.findById(targetId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // ── Inter-service call 1: Check active orders in Order Service ────────────
+    try {
+      const orderResponse = await axios.get(
+        `${ORDER_SERVICE_URL}/internal/orders/check-user/${targetId}`,
+        { headers: internalHeaders() }
+      );
+      if (orderResponse.data.hasActiveOrders) {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot delete account. This user has ${orderResponse.data.count} active order(s). Cancel all orders before deleting the account.`,
+        });
+      }
+    } catch (orderErr) {
+      console.error(`[User→Order] Safe-delete check failed: ${orderErr.message}`);
+      return res.status(503).json({
+        success: false,
+        message: 'Cannot verify order status right now. Account deletion blocked to protect data integrity.',
+      });
+    }
+
+    // ── Inter-service call 2: Check processing payments in Payment Service ────
+    try {
+      const paymentResponse = await axios.get(
+        `${PAYMENT_SERVICE_URL}/internal/payments/check-user/${targetId}`,
+        { headers: internalHeaders() }
+      );
+      if (paymentResponse.data.hasProcessingPayments) {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot delete account. This user has ${paymentResponse.data.count} payment(s) still processing. Wait for them to complete first.`,
+        });
+      }
+    } catch (paymentErr) {
+      console.error(`[User→Payment] Safe-delete check failed: ${paymentErr.message}`);
+      return res.status(503).json({
+        success: false,
+        message: 'Cannot verify payment status right now. Account deletion blocked to protect data integrity.',
+      });
+    }
+
+    // All checks passed — safe to delete
+    await user.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: 'User account deleted successfully.',
+    });
+  } catch (error) {
+    console.error(`Delete user error: ${error.message}`);
+    return res.status(500).json({ message: 'Server error deleting user' });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getProfile,
   updateProfile,
   getAllUsers,
+  deleteUser,
 };

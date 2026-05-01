@@ -21,13 +21,14 @@ env:
   SERVICE_PATH: book-service
   CONTAINER_NAME: online-bookstore-book-service
   SERVICE_PORT: "5002"
+  SERVICE_HEALTH_PATH: "/health"
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     environment: book-service
     env:
-      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/online-bookstore-book-service
+      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/online-bookstore-book-service
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,8 +39,8 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push image
         uses: docker/build-push-action@v6
@@ -51,92 +52,164 @@ jobs:
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
+            # Optional: Add branch-based tagging for non-PR builds
   deploy:
     runs-on: ubuntu-latest
     environment: book-service
     env:
-      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/online-bookstore-book-service
+      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/online-bookstore-book-service
     needs: build-and-push
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Validate required deploy secrets
         env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DROPLET_IP: ${{ secrets.DROPLET_IP }}
           DEPLOY_USERNAME: ${{ secrets.DEPLOY_USERNAME }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          MONGO_URI: ${{ secrets.MONGO_URI != '' && secrets.MONGO_URI || vars.MONGO_URI }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET || vars.JWT_SECRET }}
+          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY || vars.INTERNAL_API_KEY }}
+          ORDER_SERVICE_URL: ${{ secrets.ORDER_SERVICE_URL != '' && secrets.ORDER_SERVICE_URL || vars.ORDER_SERVICE_URL }}
         run: |
           set -euo pipefail
-          [ -n "$DEPLOY_HOST" ] || { echo "Missing secret: DEPLOY_HOST"; exit 1; }
+          [ -n "$DROPLET_IP" ] || { echo "Missing secret: DROPLET_IP"; exit 1; }
           [ -n "$DEPLOY_USERNAME" ] || { echo "Missing secret: DEPLOY_USERNAME"; exit 1; }
-          [ -n "$DEPLOY_SSH_KEY" ] || { echo "Missing secret: DEPLOY_SSH_KEY"; exit 1; }
-          [ -n "$DOCKERHUB_USERNAME" ] || { echo "Missing secret: DOCKERHUB_USERNAME"; exit 1; }
-          [ -n "$DOCKERHUB_TOKEN" ] || { echo "Missing secret: DOCKERHUB_TOKEN"; exit 1; }
+          [ -n "$SSH_PRIVATE_KEY" ] || { echo "Missing secret: SSH_PRIVATE_KEY"; exit 1; }
+          [ -n "$DOCKER_USERNAME" ] || { echo "Missing secret: DOCKER_USERNAME"; exit 1; }
+          [ -n "$DOCKER_PASSWORD" ] || { echo "Missing secret: DOCKER_PASSWORD"; exit 1; }
+          [ -n "$MONGO_URI" ] || { echo "Missing MONGO_URI (set it in secrets or vars)"; exit 1; }
+          [ -n "$JWT_SECRET" ] || { echo "Missing JWT_SECRET (set it in secrets or vars)"; exit 1; }
+          [ -n "$CLIENT_ORIGIN" ] || { echo "Missing variable: CLIENT_ORIGIN"; exit 1; }
+          [ -n "$INTERNAL_API_KEY" ] || { echo "Missing INTERNAL_API_KEY (set it in secrets or vars)"; exit 1; }
+          [ -n "$ORDER_SERVICE_URL" ] || { echo "Missing ORDER_SERVICE_URL (set it in secrets or vars)"; exit 1; }
 
       - name: Deploy on EC2
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI != '' && secrets.MONGO_URI || vars.MONGO_URI }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET || vars.JWT_SECRET }}
+          CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY || vars.INTERNAL_API_KEY }}
+          ORDER_SERVICE_URL: ${{ secrets.ORDER_SERVICE_URL != '' && secrets.ORDER_SERVICE_URL || vars.ORDER_SERVICE_URL }}
+          NODE_ENV: ${{ vars.NODE_ENV }}
+          ENABLE_BOOTSTRAP_BOOKS: ${{ vars.ENABLE_BOOTSTRAP_BOOKS }}
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
+          host: ${{ secrets.DROPLET_IP }}
           port: ${{ secrets.DEPLOY_PORT != '' && secrets.DEPLOY_PORT || '22' }}
           username: ${{ secrets.DEPLOY_USERNAME }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }}
           timeout: 60s
           command_timeout: 20m
           debug: true
           script_stop: true
+          envs: MONGO_URI,JWT_SECRET,CLIENT_ORIGIN,INTERNAL_API_KEY,ORDER_SERVICE_URL,NODE_ENV,ENABLE_BOOTSTRAP_BOOKS
           script: |
             set -u
-            export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/snap/bin
 
             echo "Connected to $(hostname) as $(whoami)"
-            
-            # Start docker if it's not running
-            if command -v systemctl > /dev/null 2>&1; then
-              sudo systemctl start docker || true
-            fi
-            
-            sudo docker --version
 
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin || {
+            if command -v docker >/dev/null 2>&1; then
+              docker --version || true
+            fi
+
+            if command -v systemctl >/dev/null 2>&1; then
+              sudo -n systemctl start docker >/dev/null 2>&1 || true
+            fi
+
+            DOCKER_MODE=""
+            if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+              DOCKER_MODE="docker"
+            elif command -v sudo >/dev/null 2>&1 && sudo -n docker info >/dev/null 2>&1; then
+              DOCKER_MODE="sudo"
+            fi
+
+            run_docker() {
+              if [ "$DOCKER_MODE" = "docker" ]; then
+                docker "$@"
+              elif [ "$DOCKER_MODE" = "sudo" ]; then
+                sudo -n docker "$@"
+              else
+                echo "Docker is not installed or current user cannot access Docker daemon"
+                if command -v systemctl >/dev/null 2>&1; then
+                  sudo -n systemctl status docker --no-pager || systemctl status docker --no-pager || true
+                fi
+                exit 1
+              fi
+            }
+
+            echo "Using Docker mode: $DOCKER_MODE"
+
+            echo "${{ secrets.DOCKER_PASSWORD }}" | run_docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin || {
               echo "Docker login failed"
               exit 1
             }
-            
-            sudo docker pull ${{ env.IMAGE_NAME }}:latest || {
+            run_docker pull ${{ env.IMAGE_NAME }}:latest || {
               echo "Docker pull failed for image: ${{ env.IMAGE_NAME }}:latest"
               exit 1
             }
 
             TARGET_CONTAINER="${{ env.CONTAINER_NAME }}"
-            EXISTING_ID="$(sudo docker ps -aq --filter "name=^/${TARGET_CONTAINER}$" || true)"
+            EXISTING_ID="$(run_docker ps -aq --filter "name=^/${TARGET_CONTAINER}$" || true)"
             if [ -n "$EXISTING_ID" ]; then
-              sudo docker rm -f "$TARGET_CONTAINER" || true
+              run_docker rm -f "$TARGET_CONTAINER" || true
             fi
 
-            # Automatically create the .env directory and file
-            sudo mkdir -p /opt/online-bookstore
             ENV_FILE="/opt/online-bookstore/${{ env.SERVICE_PATH }}.env"
-            
-            # Write environment variables directly from GitHub Secrets to the .env file
-            echo "PORT=${{ env.SERVICE_PORT }}" | sudo tee $ENV_FILE > /dev/null
-            echo "MONGO_URI=${{ secrets.MONGO_URI }}" | sudo tee -a $ENV_FILE > /dev/null
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" | sudo tee -a $ENV_FILE > /dev/null
-            echo "CLIENT_ORIGIN=${{ secrets.CLIENT_ORIGIN }}" | sudo tee -a $ENV_FILE > /dev/null
-            
-            sudo chmod 600 $ENV_FILE
-            ENV_FILE_ARG="--env-file $ENV_FILE"
+            ENV_FILE_ARG=""
+            if [ -f "$ENV_FILE" ]; then
+              ENV_FILE_ARG="--env-file $ENV_FILE"
+            fi
 
-            sudo docker run -d \
+            CONTAINER_NODE_ENV="${NODE_ENV:-production}"
+            CONTAINER_ENABLE_BOOTSTRAP_BOOKS="${ENABLE_BOOTSTRAP_BOOKS:-false}"
+
+            run_docker run -d \
               --name ${{ env.CONTAINER_NAME }} \
               --restart unless-stopped \
               -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
               $ENV_FILE_ARG \
+              --env PORT=${{ env.SERVICE_PORT }} \
+              --env NODE_ENV="$CONTAINER_NODE_ENV" \
+              --env MONGO_URI="$MONGO_URI" \
+              --env JWT_SECRET="$JWT_SECRET" \
+              --env CLIENT_ORIGIN="$CLIENT_ORIGIN" \
+              --env INTERNAL_API_KEY="$INTERNAL_API_KEY" \
+              --env ORDER_SERVICE_URL="$ORDER_SERVICE_URL" \
+              --env ENABLE_BOOTSTRAP_BOOKS="$CONTAINER_ENABLE_BOOTSTRAP_BOOKS" \
               ${{ env.IMAGE_NAME }}:latest || {
                 echo "Container start failed for: ${{ env.CONTAINER_NAME }}"
-                sudo docker ps -a --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
+                run_docker ps -a --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
                 exit 1
               }
 
-            sudo docker ps --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
+            run_docker ps --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
+
+            HEALTH_URL="http://127.0.0.1:${{ env.SERVICE_PORT }}${{ env.SERVICE_HEALTH_PATH }}"
+            ATTEMPTS=15
+            SLEEP_SECS=3
+            i=1
+
+            while [ "$i" -le "$ATTEMPTS" ]; do
+              if command -v curl >/dev/null 2>&1 && curl -fsS "$HEALTH_URL" >/dev/null 2>&1; then
+                echo "Health check passed at $HEALTH_URL"
+                exit 0
+              fi
+
+              if command -v wget >/dev/null 2>&1 && wget -qO- "$HEALTH_URL" >/dev/null 2>&1; then
+                echo "Health check passed at $HEALTH_URL"
+                exit 0
+              fi
+
+              echo "Health check attempt ${i}/${ATTEMPTS} failed. Waiting ${SLEEP_SECS}s..."
+              sleep "$SLEEP_SECS"
+              i=$((i + 1))
+            done
+
+            echo "Health check failed at $HEALTH_URL"
+            run_docker ps -a --filter "name=${{ env.CONTAINER_NAME }}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" || true
+            run_docker logs --tail 150 ${{ env.CONTAINER_NAME }} || true
+            exit 1

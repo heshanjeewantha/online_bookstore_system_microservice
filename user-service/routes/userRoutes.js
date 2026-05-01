@@ -6,6 +6,7 @@ const {
   getProfile,
   updateProfile,
   getAllUsers,
+  deleteUser,
 } = require('../controllers/userController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
@@ -54,5 +55,8 @@ router.put(
 
 // GET /users  (admin only)
 router.get('/', protect, adminOnly, getAllUsers);
+
+// DELETE /users/:id  (owner or admin) — Safe Delete via Order & Payment checks
+router.delete('/:id', protect, deleteUser);
 
 module.exports = router;
