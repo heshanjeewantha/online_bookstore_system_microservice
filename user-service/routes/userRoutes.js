@@ -58,5 +58,5 @@ router.get('/', protect, adminOnly, getAllUsers);
 
 // DELETE /users/:id  (owner or admin) — Safe Delete via Order & Payment checks
 router.delete('/:id', protect, deleteUser);
-
+//router.delete('/:id', protect, adminOnly, deleteUser); // Admin-only version (uncomment if you want to restrict deletion to admins only)
 module.exports = router;
