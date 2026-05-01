@@ -6,18 +6,18 @@ on:
       - main
       - develop
     paths:
-      - 'frontend-react/**'
-      - '.github/workflows/frontend-cicd.yml'
+      - "frontend-react/**"
+      - ".github/workflows/frontend-cicd.yml"
   pull_request:
     branches:
       - main
     paths:
-      - 'frontend-react/**'
+      - "frontend-react/**"
 
 env:
   DOCKER_REGISTRY: docker.io
   IMAGE_NAME: bookstore-frontend
-  NODE_VERSION: '18'
+  NODE_VERSION: "18"
 
 jobs:
   build-and-push:
@@ -45,7 +45,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKER_REGISTRY }}/${{ github.event_name != 'pull_request' && format('{0}/bookstore-frontend', secrets.DOCKER_HUB_USERNAME) || format('{0}/bookstore-frontend', github.repository_owner) }}
+          images: ${{ env.DOCKER_REGISTRY }}/${{ github.event_name != 'pull_request' &&
+            format('{0}/bookstore-frontend', secrets.DOCKER_HUB_USERNAME) ||
+            format('{0}/bookstore-frontend', github.repository_owner) }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
@@ -66,7 +68,8 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/develop')
 
     steps:
       - name: Checkout repository
@@ -91,33 +94,33 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           set -e
           echo "Starting deployment..."
-          
+
           # Set environment variables
           export DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
           export DOCKER_HUB_PASSWORD=${{ secrets.DOCKER_HUB_PASSWORD }}
           export IMAGE_NAME=${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}
           export DEPLOY_BRANCH=${{ github.ref_name }}
-          
+
           # Pull latest image tag
           if [ "$DEPLOY_BRANCH" = "main" ]; then
             IMAGE_TAG="latest"
           else
             IMAGE_TAG="$DEPLOY_BRANCH"
           fi
-          
+
           # Login to Docker Hub
           echo "Logging in to Docker Hub..."
           echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
-          
+
           # Pull the latest image
           echo "Pulling Docker image: $IMAGE_NAME:$IMAGE_TAG"
           docker pull "$IMAGE_NAME:$IMAGE_TAG"
-          
+
           # Stop and remove old container if exists
           echo "Stopping old container..."
           docker stop bookstore-frontend || true
           docker rm bookstore-frontend || true
-          
+
           # Run new container
           echo "Starting new container..."
           docker run -d \
@@ -126,7 +129,7 @@ jobs:
             -p 80:80 \
             -p 443:443 \
             "$IMAGE_NAME:$IMAGE_TAG"
-          
+
           # Verify container is running
           sleep 3
           if docker ps | grep -q bookstore-frontend; then
@@ -137,14 +140,14 @@ jobs:
             docker logs bookstore-frontend
             exit 1
           fi
-          
+
           # Cleanup old images
           echo "Cleaning up old images..."
           docker image prune -f --all --filter "until=72h"
-          
+
           # Logout from Docker Hub
           docker logout
-          
+
           echo "Deployment completed!"
           EOF
 
@@ -167,6 +170,6 @@ jobs:
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
-          text: 'Frontend deployment failed!'
+          text: "Frontend deployment failed!"
           webhook_url: ${{ secrets.SLACK_WEBHOOK }}
           fields: repo,message,commit,author
