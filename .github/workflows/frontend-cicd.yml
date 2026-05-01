@@ -83,7 +83,7 @@ jobs:
     env:
       DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
       DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
-      IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}
+      IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/bookstore-frontend
       SERVER_HOST: ${{ secrets.SERVER_HOST }}
       SERVER_USER: ${{ secrets.SERVER_USER }}
       DEPLOY_BRANCH: ${{ github.ref_name }}
@@ -108,7 +108,7 @@ jobs:
           # Set environment variables (use the already-constructed IMAGE_NAME from job env)
           export DOCKER_HUB_USERNAME='${{ env.DOCKER_HUB_USERNAME }}'
           export DOCKER_HUB_PASSWORD='${{ env.DOCKER_HUB_PASSWORD }}'
-          export IMAGE_NAME='${{ env.IMAGE_NAME }}'
+          export IMAGE_NAME='${{ secrets.DOCKER_HUB_USERNAME }}/bookstore-frontend'
           export DEPLOY_BRANCH='${{ env.DEPLOY_BRANCH }}'
 
           # Pull latest image tag
