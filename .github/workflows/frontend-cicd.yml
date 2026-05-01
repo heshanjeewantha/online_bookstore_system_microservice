@@ -174,5 +174,4 @@ jobs:
           done
           echo "✗ Application did not become ready in time"
           exit 1
-
       # Slack notifications removed (no SLACK_WEBHOOK_URL configured)
