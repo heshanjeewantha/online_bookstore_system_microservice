@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: API contract for payment processing.
 servers:
-  - url: http://129.212.233.148:3003
+  - url: http://129.212.233.148:5004
     description: Payment Service
 paths:
   /api/payments:
