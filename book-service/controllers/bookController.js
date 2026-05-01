@@ -36,6 +36,28 @@ const getBooks = async (req, res, next) => {
       query.category = category;
     }
 
+    // ── Fetch fresh sales data from Order Service if sorting by bestSeller ──
+    if (sort === 'bestSeller') {
+      try {
+        const response = await axios.get(
+          `${ORDER_SERVICE_URL}/internal/orders/book-sales`,
+          { headers: internalHeaders() }
+        );
+
+        if (response.data && response.data.sales) {
+          const salesMap = response.data.sales; // { bookId: totalQtySold }
+          // Update totalSales on local books with fresh data
+          const updateOps = Object.entries(salesMap).map(([bookId, qty]) =>
+            Book.findByIdAndUpdate(bookId, { totalSales: qty }, { new: false }).catch(() => null)
+          );
+          await Promise.all(updateOps);
+        }
+      } catch (orderErr) {
+        // If Order Service is unavailable, fall back to cached totalSales values
+        console.warn(`[Book→Order] Could not fetch live sales data: ${orderErr.message}. Using cached values.`);
+      }
+    }
+
     const sortMap = {
       newest:    { createdAt: -1 },
       oldest:    { createdAt:  1 },

@@ -24,10 +24,28 @@ const ManageBooks = () => {
   const [feedback, setFeedback] = useState({ error: '', success: '' });
 
   useEffect(() => {
+    const fetchBooks = async () => {
+      setLoading(true);
+
+      try {
+        const params = viewMode === 'bestSellers' ? { sort: 'bestSeller' } : {};
+        const { data } = await getBooks(params);
+        setBooks(data.books);
+      } catch (error) {
+        setFeedback({
+          error: error.response?.data?.message || 'Unable to load books.',
+          success: '',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchBooks();
   }, [viewMode]);
 
   const fetchBooks = async () => {
+    // Refresh books after create/update/delete
     setLoading(true);
 
     try {
@@ -176,8 +194,8 @@ const ManageBooks = () => {
 
       <div className="mb-6 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-600 shadow-sm">
         {viewMode === 'bestSellers'
-          ? 'Showing the top-selling books sorted by total sales.'
-          : 'Showing the full catalog.'}
+          ? 'Showing best-selling books sorted by total order quantity.'
+          : 'Showing all books in catalog order.'}
       </div>
 
       {feedback.error && (
@@ -205,6 +223,7 @@ const ManageBooks = () => {
                 <th className="px-6 py-4">Book</th>
                 <th className="px-6 py-4">Price</th>
                 <th className="px-6 py-4">Stock</th>
+                {viewMode === 'bestSellers' && <th className="px-6 py-4">Total Sold</th>}
                 <th className="px-6 py-4">Category</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -237,6 +256,11 @@ const ManageBooks = () => {
                       {book.stock} in stock
                     </span>
                   </td>
+                  {viewMode === 'bestSellers' && (
+                    <td className="px-6 py-4 font-semibold text-amber-600">
+                      {Number(book.totalSales || 0).toLocaleString()} units
+                    </td>
+                  )}
                   <td className="px-6 py-4">{book.category}</td>
                   <td className="px-6 py-4 text-right">
                     <button
