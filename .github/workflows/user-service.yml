@@ -68,9 +68,11 @@ jobs:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           MONGO_URI: ${{ secrets.MONGO_URI != '' && secrets.MONGO_URI || vars.MONGO_URI }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET || vars.JWT_SECRET }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET ||
+            vars.JWT_SECRET }}
           CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
-          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY || vars.INTERNAL_API_KEY }}
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY
+            || vars.INTERNAL_API_KEY }}
           ORDER_SERVICE_URL: ${{ vars.ORDER_SERVICE_URL }}
           PAYMENT_SERVICE_URL: ${{ vars.PAYMENT_SERVICE_URL }}
         run: |
@@ -83,7 +85,7 @@ jobs:
               exit 1
             fi
           }
-          
+
           require "DEPLOY_HOST (secret)" "${DEPLOY_HOST}"
           require "DEPLOY_USERNAME (secret)" "${DEPLOY_USERNAME}"
           require "DEPLOY_SSH_KEY (secret)" "${DEPLOY_SSH_KEY}"
@@ -95,17 +97,19 @@ jobs:
           require "INTERNAL_API_KEY (secret or var)" "${INTERNAL_API_KEY}"
           require "ORDER_SERVICE_URL (var)" "${ORDER_SERVICE_URL}"
           require "PAYMENT_SERVICE_URL (var)" "${PAYMENT_SERVICE_URL}"
-          
+
           echo "✓ All required secrets and variables are present"
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.2.0
         env:
           MONGO_URI: ${{ secrets.MONGO_URI != '' && secrets.MONGO_URI || vars.MONGO_URI }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET || vars.JWT_SECRET }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET ||
+            vars.JWT_SECRET }}
           JWT_EXPIRE: ${{ vars.JWT_EXPIRE }}
           CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
-          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY || vars.INTERNAL_API_KEY }}
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY != '' && secrets.INTERNAL_API_KEY
+            || vars.INTERNAL_API_KEY }}
           ORDER_SERVICE_URL: ${{ vars.ORDER_SERVICE_URL }}
           PAYMENT_SERVICE_URL: ${{ vars.PAYMENT_SERVICE_URL }}
           NODE_ENV: ${{ vars.NODE_ENV }}
