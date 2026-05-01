@@ -80,6 +80,13 @@ jobs:
     environment: production
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/develop')
+    env:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
+      DEPLOY_BRANCH: ${{ github.ref_name }}
 
     steps:
       - name: Checkout repository
@@ -93,23 +100,16 @@ jobs:
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to server
-        env:
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
-          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          DEPLOY_BRANCH: ${{ github.ref_name }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           set -e
           echo "Starting deployment..."
 
-          # Set environment variables
-          export DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
-          export DOCKER_HUB_PASSWORD=${{ secrets.DOCKER_HUB_PASSWORD }}
-          export IMAGE_NAME=${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}
-          export DEPLOY_BRANCH=${{ github.ref_name }}
+          # Set environment variables (use the already-constructed IMAGE_NAME from job env)
+          export DOCKER_HUB_USERNAME='${{ env.DOCKER_HUB_USERNAME }}'
+          export DOCKER_HUB_PASSWORD='${{ env.DOCKER_HUB_PASSWORD }}'
+          export IMAGE_NAME='${{ env.IMAGE_NAME }}'
+          export DEPLOY_BRANCH='${{ env.DEPLOY_BRANCH }}'
 
           # Pull latest image tag
           if [ "$DEPLOY_BRANCH" = "main" ]; then
@@ -176,9 +176,11 @@ jobs:
           exit 1
 
       - name: Slack notification (on failure)
-        if: failure()
+        if: failure() && secrets.SLACK_WEBHOOK_URL != ''
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
           text: "Frontend deployment failed!"
           fields: repo,message,commit,author
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
