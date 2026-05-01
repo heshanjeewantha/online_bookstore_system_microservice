@@ -16,7 +16,7 @@ on:
 
 env:
   DOCKER_REGISTRY: docker.io
-  IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/bookstore-frontend
+  IMAGE_NAME: bookstore-frontend
   NODE_VERSION: '18'
 
 jobs:
@@ -34,6 +34,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
@@ -44,7 +45,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.DOCKER_REGISTRY }}/${{ github.event_name != 'pull_request' && format('{0}/bookstore-frontend', secrets.DOCKER_HUB_USERNAME) || format('{0}/bookstore-frontend', github.repository_owner) }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
@@ -82,7 +83,7 @@ jobs:
         env:
           DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
           DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           DEPLOY_BRANCH: ${{ github.ref_name }}
@@ -94,7 +95,7 @@ jobs:
           # Set environment variables
           export DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
           export DOCKER_HUB_PASSWORD=${{ secrets.DOCKER_HUB_PASSWORD }}
-          export IMAGE_NAME=${{ env.IMAGE_NAME }}
+          export IMAGE_NAME=${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}
           export DEPLOY_BRANCH=${{ github.ref_name }}
           
           # Pull latest image tag
