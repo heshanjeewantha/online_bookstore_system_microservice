@@ -41,7 +41,7 @@ const BookDetailsPage = () => {
   if (loading) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+        <div className="w-12 h-12 border-4 rounded-full animate-spin border-brand-600 border-t-transparent" />
       </div>
     );
   }
@@ -50,8 +50,8 @@ const BookDetailsPage = () => {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
         <h1 className="text-3xl font-bold text-slate-800">Book not found</h1>
-        <p className="mt-3 max-w-lg text-slate-500">{error}</p>
-        <button type="button" onClick={() => navigate('/books')} className="btn-primary mt-6">
+        <p className="max-w-lg mt-3 text-slate-500">{error}</p>
+        <button type="button" onClick={() => navigate('/books')} className="mt-6 btn-primary">
           Back to catalog
         </button>
       </div>
@@ -59,7 +59,7 @@ const BookDetailsPage = () => {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="px-4 py-12 mx-auto max-w-7xl sm:px-6 lg:px-8">
       <button
         type="button"
         onClick={() => navigate('/books')}
@@ -71,12 +71,12 @@ const BookDetailsPage = () => {
       <div className="grid gap-12 lg:grid-cols-[minmax(320px,420px)_1fr]">
         <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-lg">
           <div className="aspect-[3/4] overflow-hidden bg-slate-100">
-            <img src={book.image} alt={book.title} className="h-full w-full object-cover" />
+            <img src={book.image} alt={book.title} className="object-cover w-full h-full" />
           </div>
         </div>
 
         <div>
-          <span className="inline-flex rounded-full bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700">
+          <span className="inline-flex px-4 py-2 text-sm font-semibold rounded-full bg-brand-50 text-brand-700">
             {book.category}
           </span>
           <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">
@@ -99,7 +99,7 @@ const BookDetailsPage = () => {
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Catalog ID</p>
-              <p className="mt-2 truncate text-sm font-mono text-slate-500">{book._id}</p>
+              <p className="mt-2 font-mono text-sm truncate text-slate-500">{book._id}</p>
             </div>
           </div>
 
@@ -112,22 +112,22 @@ const BookDetailsPage = () => {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
               <div>
                 <label className="label">Quantity</label>
-                <div className="flex h-12 w-32 items-center overflow-hidden rounded-xl border border-slate-300 bg-white">
+                <div className="flex items-center w-32 h-12 overflow-hidden bg-white border rounded-xl border-slate-300">
                   <button
                     type="button"
                     disabled={quantity <= 1 || book.stock === 0}
-                    className="flex h-full w-10 items-center justify-center text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 disabled:opacity-40"
+                    className="flex items-center justify-center w-10 h-full transition-colors text-slate-500 hover:bg-slate-50 hover:text-slate-800 disabled:opacity-40"
                     onClick={() => setQuantity((current) => current - 1)}
                   >
                     -
                   </button>
-                  <div className="flex-1 border-x border-slate-200 text-center font-bold text-slate-800">
+                  <div className="flex-1 font-bold text-center border-x border-slate-200 text-slate-800">
                     {quantity}
                   </div>
                   <button
                     type="button"
                     disabled={quantity >= book.stock || book.stock === 0}
-                    className="flex h-full w-10 items-center justify-center text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 disabled:opacity-40"
+                    className="flex items-center justify-center w-10 h-full transition-colors text-slate-500 hover:bg-slate-50 hover:text-slate-800 disabled:opacity-40"
                     onClick={() => setQuantity((current) => current + 1)}
                   >
                     +
@@ -162,3 +162,4 @@ const BookDetailsPage = () => {
 };
 
 export default BookDetailsPage;
+//test frontend

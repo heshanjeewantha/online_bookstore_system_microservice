@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/api\/orders/, '/orders'),
         },
         '/api/payments': {
-          target: 'http://129.212.233.148:5004',
+          target: 'http://157.245.137.58:5004',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/payments/, '/payments'),
         },

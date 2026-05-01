@@ -19,3 +19,4 @@ const internalAuth = (req, res, next) => {
 };
 
 module.exports = { internalAuth };
+// order-service/middleware/internalAuth.js
