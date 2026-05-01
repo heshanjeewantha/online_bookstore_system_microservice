@@ -75,17 +75,28 @@ jobs:
           PAYMENT_SERVICE_URL: ${{ vars.PAYMENT_SERVICE_URL }}
         run: |
           set -euo pipefail
-          [ -n "$DEPLOY_HOST" ] || { echo "Missing secret: DEPLOY_HOST"; exit 1; }
-          [ -n "$DEPLOY_USERNAME" ] || { echo "Missing secret: DEPLOY_USERNAME"; exit 1; }
-          [ -n "$DEPLOY_SSH_KEY" ] || { echo "Missing secret: DEPLOY_SSH_KEY"; exit 1; }
-          [ -n "$DOCKERHUB_USERNAME" ] || { echo "Missing secret: DOCKERHUB_USERNAME"; exit 1; }
-          [ -n "$DOCKERHUB_TOKEN" ] || { echo "Missing secret: DOCKERHUB_TOKEN"; exit 1; }
-          [ -n "$MONGO_URI" ] || { echo "Missing secret: MONGO_URI"; exit 1; }
-          [ -n "$JWT_SECRET" ] || { echo "Missing JWT_SECRET (set it in secrets or vars)"; exit 1; }
-          [ -n "$CLIENT_ORIGIN" ] || { echo "Missing variable: CLIENT_ORIGIN"; exit 1; }
-          [ -n "$INTERNAL_API_KEY" ] || { echo "Missing INTERNAL_API_KEY (set it in secrets or vars)"; exit 1; }
-          [ -n "$ORDER_SERVICE_URL" ] || { echo "Missing variable: ORDER_SERVICE_URL"; exit 1; }
-          [ -n "$PAYMENT_SERVICE_URL" ] || { echo "Missing variable: PAYMENT_SERVICE_URL"; exit 1; }
+          require() {
+            local name="$1"
+            local val="$2"
+            if [ -z "$val" ]; then
+              echo "::error::$name is missing or empty"
+              exit 1
+            fi
+          }
+          
+          require "DEPLOY_HOST (secret)" "${DEPLOY_HOST}"
+          require "DEPLOY_USERNAME (secret)" "${DEPLOY_USERNAME}"
+          require "DEPLOY_SSH_KEY (secret)" "${DEPLOY_SSH_KEY}"
+          require "DOCKERHUB_USERNAME (secret)" "${DOCKERHUB_USERNAME}"
+          require "DOCKERHUB_TOKEN (secret)" "${DOCKERHUB_TOKEN}"
+          require "MONGO_URI (secret or var)" "${MONGO_URI}"
+          require "JWT_SECRET (secret or var)" "${JWT_SECRET}"
+          require "CLIENT_ORIGIN (var)" "${CLIENT_ORIGIN}"
+          require "INTERNAL_API_KEY (secret or var)" "${INTERNAL_API_KEY}"
+          require "ORDER_SERVICE_URL (var)" "${ORDER_SERVICE_URL}"
+          require "PAYMENT_SERVICE_URL (var)" "${PAYMENT_SERVICE_URL}"
+          
+          echo "✓ All required secrets and variables are present"
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.2.0
