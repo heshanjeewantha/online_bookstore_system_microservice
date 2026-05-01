@@ -1,0 +1,89 @@
+name: Deploy Payment Service
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: payment-service
+    defaults:
+      run:
+        working-directory: payment-service
+    steps:
+      # Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4  # Updated to v4
+      
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4  # Updated to v4
+        with:
+          node-version: 18
+      
+      # Debug: Show files in repository
+      - name: List files
+        run: |
+          pwd
+          ls -la
+          ls -la src/ || echo "No src directory"
+      
+      # Check if package.json exists
+      - name: Check package.json
+        run: |
+          test -f package.json
+      
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          npm ci
+      
+      # Run tests (skip if no tests)
+      - name: Run tests
+        run: |
+          npm test --if-present
+      
+      # Login to Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      # Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t payment-service-ctse .
+          docker tag payment-service-ctse ${{ secrets.DOCKER_USERNAME }}/payment-service-ctse:latest
+      
+      # Push Docker image
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/payment-service-ctse:latest
+      
+      # Deploy to server
+      - name: Deploy to DigitalOcean
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/payment-service-ctse:latest
+            docker stop payment-service || true
+            docker rm payment-service || true
+            docker run -d \
+              -p 80:5004 \
+              -p 5004:5004 \
+              --name payment-service \
+              --restart always \
+              -e PORT=5004 \
+              -e MONGO_URI='${{ secrets.MONGO_URI }}' \
+              -e JWT_SECRET='${{ secrets.JWT_SECRET }}' \
+              -e CLIENT_ORIGIN='${{ secrets.CLIENT_ORIGIN }}' \
+              -e INTERNAL_API_KEY='${{ secrets.INTERNAL_API_KEY }}' \
+              -e ORDER_SERVICE_URL='${{ secrets.ORDER_SERVICE_URL }}' \
+              -e NODE_ENV=production \
+              ${{ secrets.DOCKER_USERNAME }}/payment-service-ctse:latest
+            echo "Deployment complete!"
