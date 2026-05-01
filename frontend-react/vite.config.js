@@ -14,22 +14,22 @@ export default defineConfig(({ mode }) => {
         '/api/users': {
           target: 'http://164.92.92.45:5001',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/users/, '/api/users'),
+          rewrite: (path) => path.replace(/^\/api\/users/, '/users'),
         },
         '/api/books': {
-          target: 'http://159.223.106.87:5002',
+          target: 'http://137.184.56.244:5002',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/books/, '/api/books'),
+          rewrite: (path) => path.replace(/^\/api\/books/, '/books'),
         },
         '/api/orders': {
           target: 'http://159.223.63.71:5003',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/orders/, '/api/orders'),
+          rewrite: (path) => path.replace(/^\/api\/orders/, '/orders'),
         },
         '/api/payments': {
           target: 'http://129.212.233.148:5004',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/payments/, '/api/payments'),
+          rewrite: (path) => path.replace(/^\/api\/payments/, '/payments'),
         },
       },
     },

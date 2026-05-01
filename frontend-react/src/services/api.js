@@ -18,7 +18,7 @@ export const updateProfile       = (data)        => userApi.put('/profile', data
 export const getUsers            = ()            => userApi.get('/');
 export const deleteUser          = (id)          => userApi.delete(`/${id}`);
 
-// ── Book Service  (http://159.223.106.87:5002) ────────────────────────────────
+// ── Book Service  (http://137.184.56.244:5002) ────────────────────────────────
 export const getBooks            = (params = {}) => bookApi.get('/', { params });
 export const getBookById         = (id)          => bookApi.get(`/${id}`);
 export const createBook          = (data)        => bookApi.post('/', data);
