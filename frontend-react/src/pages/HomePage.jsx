@@ -51,7 +51,7 @@ const HomePage = () => {
               Browse new arrivals, place orders in minutes, and track delivery updates from your account dashboard.
             </p>
             <div className="flex flex-col gap-4 mt-8 sm:flex-row">
-              <Link to="/books" className="text-center btn-primary">
+              <Link to="/books" className="text-center btn-red">
                 Browse Catalog
               </Link>
               <Link to="/register" className="text-white btn-secondary border-white/15 bg-white/10 hover:bg-white/15">
